@@ -55,6 +55,7 @@
         <commons-beanutils.version>1.9.3</commons-beanutils.version>
         <jackson-datatype-jsr310.version>2.9.9</jackson-datatype-jsr310.version>
         <httpmime.version>4.5.8</httpmime.version>
+        <stream-rabbit.version>1.3.5.RELEASE</stream-rabbit.version>
 
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
@@ -97,7 +98,7 @@
             <dependency>
                 <groupId>org.springframework.cloud</groupId>
                 <artifactId>spring-cloud-starter-stream-rabbit</artifactId>
-                <version>${spring.boot.version}</version>
+                <version>${stream-rabbit.version}</version>
             </dependency>
 
             <dependency>
