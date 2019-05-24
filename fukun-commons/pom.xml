@@ -8,8 +8,8 @@
     <artifactId>fukun-commons</artifactId>
     <version>${parent.version}</version>
     <packaging>jar</packaging>
-    <name>commons-module</name>
-    <description>commons-module</description>
+    <name>fukun-commons</name>
+    <description>fukun-commons</description>
 
     <parent>
         <groupId>com.fukun</groupId>

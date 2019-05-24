@@ -7,8 +7,8 @@
     <artifactId>fukun-parent</artifactId>
     <version>${parent.version}</version>
     <packaging>pom</packaging>
-    <name>parent-module</name>
-    <description>parent-module</description>
+    <name>fukun-parent</name>
+    <description>fukun-parent</description>
 
     <parent>
         <groupId>org.springframework.boot</groupId>
