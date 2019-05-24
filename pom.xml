@@ -12,6 +12,8 @@
     <modules>
         <module>fukun-parent</module>
         <module>fukun-commons</module>
+        <module>fukun-user</module>
+        <module>fukun-demo</module>
       <!--  <module>fukun-console-server</module>
         <module>fukun-app-server</module>-->
     </modules>
