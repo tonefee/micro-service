@@ -39,6 +39,7 @@ public class LoginAuthInterceptor implements HandlerInterceptor {
 
                 //直接获取登录用户（防止请求转发时，第二次查询）
                 LoginUser loginUser = LoginTokenHelper.getLoginUserFromRequest();
+                // 用户已经登录
                 if (loginUser != null) {
                     return true;
                 }
