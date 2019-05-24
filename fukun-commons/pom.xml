@@ -7,7 +7,7 @@
     <groupId>com.fukun</groupId>
     <artifactId>fukun-commons</artifactId>
     <version>${parent.version}</version>
-    <packaging>jar</packaging>
+    <packaging>pom</packaging>
     <name>fukun-commons</name>
     <description>fukun-commons</description>
 
