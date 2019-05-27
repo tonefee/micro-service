@@ -25,14 +25,14 @@ import java.util.List;
 public class LoginQO {
 
     @NotBlank
-    @ApiModelProperty(value = "账号")
+    @ApiModelProperty(value = "账号", example = "15062230055")
     private String account;
 
     @NotBlank
-    @ApiModelProperty(value = "密码")
+    @ApiModelProperty(value = "密码", example = "123456")
     private String pwd;
 
     @NotEmpty
-    @ApiModelProperty(value = "凭证类型")
+    @ApiModelProperty(value = "凭证类型", example = "0")
     private List<String> type;
 }

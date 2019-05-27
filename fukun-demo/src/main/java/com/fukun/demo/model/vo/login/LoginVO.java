@@ -26,24 +26,24 @@ public class LoginVO implements Model {
 
     private static final long serialVersionUID = -9111387775700628962L;
 
-    @ApiModelProperty(value = "用户登陆TOKEN")
+    @ApiModelProperty(value = "用户登陆TOKEN", example = "11211442146788")
     private String token;
 
-    @ApiModelProperty(value = "过期时间（单位：秒）")
+    @ApiModelProperty(value = "过期时间（单位：秒）", example = "3600")
     private Long ttl;
 
-    @ApiModelProperty(value = "登陆IP")
+    @ApiModelProperty(value = "登陆IP", example = "192168053")
     private String ip;
 
-    @ApiModelProperty(value = "登陆平台")
+    @ApiModelProperty(value = "登陆平台", example = "1")
     private String platform;
 
-    @ApiModelProperty(value = "登陆时间")
+    @ApiModelProperty(value = "登陆时间", example = "20190527")
     private Date loginTime;
 
-    @ApiModelProperty(value = "用户信息")
+    @ApiModelProperty(value = "用户信息", example = "1")
     private LoginUser user;
 
-    @ApiModelProperty(value = "凭证")
+    @ApiModelProperty(value = "凭证", example = "1")
     private LoginCredentialVO loginCredential;
 }

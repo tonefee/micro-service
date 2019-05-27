@@ -21,25 +21,25 @@ public class LoginUser implements Serializable {
 
     private static final long serialVersionUID = -3675314128118074922L;
 
-    @ApiModelProperty(value = "用户ID")
+    @ApiModelProperty(value = "用户ID", example = "1")
     private String id;
 
-    @ApiModelProperty(value = "登陆账号")
+    @ApiModelProperty(value = "登陆账号", example = "1")
     private String nickname;
 
-    @ApiModelProperty(value = "性别")
+    @ApiModelProperty(value = "性别", example = "1")
     private String gender;
 
-    @ApiModelProperty(value = "头像")
+    @ApiModelProperty(value = "头像", example = "1")
     private String avatar;
 
-    @ApiModelProperty(value = "类型")
+    @ApiModelProperty(value = "类型", example = "1")
     private String type;
 
-    @ApiModelProperty(value = "最新登陆IP")
+    @ApiModelProperty(value = "最新登陆IP", example = "1")
     private String latestLoginIp;
 
-    @ApiModelProperty(value = "最新登陆时间")
+    @ApiModelProperty(value = "最新登陆时间", example = "1")
     private Date latestLoginTime;
 
 }

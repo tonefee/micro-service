@@ -26,11 +26,11 @@
 			<artifactId>fukun-user-model</artifactId>
 			<version>${parent.version}</version>
 		</dependency>
-		<dependency>
+		<!--<dependency>
 			<groupId>com.fukun</groupId>
 			<artifactId>fukun-user-event</artifactId>
 			<version>${parent.version}</version>
-		</dependency>
+		</dependency>-->
         <dependency>
             <groupId>com.fukun</groupId>
             <artifactId>fukun-commons-service</artifactId>

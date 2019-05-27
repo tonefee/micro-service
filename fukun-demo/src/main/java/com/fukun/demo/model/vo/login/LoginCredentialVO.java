@@ -21,13 +21,13 @@ public class LoginCredentialVO implements Model {
 
     private static final long serialVersionUID = 5550420394013305835L;
 
-    @ApiModelProperty(value = "凭证ID")
+    @ApiModelProperty(value = "凭证ID", example = "1")
     private Long id;
 
-    @ApiModelProperty(value = "账号")
+    @ApiModelProperty(value = "账号", example = "15062230055")
     private String account;
 
-    @ApiModelProperty(value = "账号类型")
+    @ApiModelProperty(value = "账号类型", example = "1")
     private String type;
 
 }

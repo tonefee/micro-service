@@ -29,28 +29,28 @@ public class LoginCredential extends BasePO<Long> {
 
     private static final long serialVersionUID = 5550420394013305835L;
 
-    @ApiModelProperty(value = "凭证主键")
+    @ApiModelProperty(value = "凭证主键", example = "1")
     @Id
     @GeneratedValue(generator = "JDBC")
     private Long id;
 
-    @ApiModelProperty(value = "账号")
+    @ApiModelProperty(value = "账号", example = "1")
     @NotBlank
     @Length(min = 1, max = 128)
     private String account;
 
-    @ApiModelProperty(value = "密码")
+    @ApiModelProperty(value = "密码", example = "1")
     private String pwd;
 
-    @ApiModelProperty(value = "密码加密随机盐")
+    @ApiModelProperty(value = "密码加密随机盐", example = "1")
     @Length(max = 64)
     private String randomSalt;
 
-    @ApiModelProperty(value = "用户主键")
+    @ApiModelProperty(value = "用户主键", example = "1")
     @NotBlank
     private String userId;
 
-    @ApiModelProperty(value = "账号类型")
+    @ApiModelProperty(value = "账号类型", example = "1")
     @EnumValue(enumClass = LoginCredential.TypeEnum.class, enumMethod = "isValidName")
     private String type;
 

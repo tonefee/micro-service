@@ -31,17 +31,17 @@ public class Org extends BaseSortTreePO<Long> {
 
     private static final long serialVersionUID = 2623905517895913619L;
 
-    @ApiModelProperty(value = "主键")
+    @ApiModelProperty(value = "主键", example = "1")
     @Id
     @GeneratedValue(generator = "JDBC")
     private Long id;
 
-    @ApiModelProperty(value = "组织架构名称")
+    @ApiModelProperty(value = "组织架构名称", example = "1")
     @NotBlank(groups = CreateGroup.class)
     @Length(min = 1, max = 64, groups = {CreateGroup.class, UpdateGroup.class})
     private String name;
 
-    @ApiModelProperty(value = "类型")
+    @ApiModelProperty(value = "类型", example = "1")
     @NotBlank(groups = CreateGroup.class)
     @EnumValue(enumClass = TypeEnum.class, enumMethod = "isValidName", groups = {CreateGroup.class, UpdateGroup.class})
     private String type;

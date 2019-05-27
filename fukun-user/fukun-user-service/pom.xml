@@ -185,11 +185,6 @@
         <dependency>
             <groupId>com.fukun</groupId>
             <artifactId>fukun-user-token</artifactId>
-            <version>1.0.0-SNAPSHOT</version>
-        </dependency>
-        <dependency>
-            <groupId>com.fukun</groupId>
-            <artifactId>fukun-user-token</artifactId>
             <version>${parent.version}</version>
         </dependency>
         <dependency>

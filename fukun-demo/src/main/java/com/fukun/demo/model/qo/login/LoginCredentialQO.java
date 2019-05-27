@@ -24,19 +24,19 @@ import org.hibernate.validator.constraints.NotBlank;
 @Data
 public class LoginCredentialQO {
 
-    @ApiModelProperty(value = "账号")
+    @ApiModelProperty(value = "账号", example = "15062230055")
     @NotBlank
     @Length(min = 1, max = 128)
     private String account;
 
-    @ApiModelProperty(value = "密码")
+    @ApiModelProperty(value = "密码", example = "123456")
     private String pwd;
 
-    @ApiModelProperty(value = "用户ID")
+    @ApiModelProperty(value = "用户ID", example = "1")
     @NotBlank
     private String userId;
 
-    @ApiModelProperty(value = "账号类型")
+    @ApiModelProperty(value = "账号类型", example = "1")
     @EnumValue(enumClass = LoginCredential.TypeEnum.class, enumMethod = "isValidName")
     private String type;
 

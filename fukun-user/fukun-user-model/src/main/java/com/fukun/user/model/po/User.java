@@ -30,32 +30,32 @@ public class User extends BasePO<String> {
 
     private static final long serialVersionUID = -7491215402569546437L;
 
-    @ApiModelProperty(value = "用户主键")
+    @ApiModelProperty(value = "用户主键", example = "1")
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY, generator = "SELECT REPLACE(UUID(),'-','')")
     @Length(min = 1, max = 64)
     private String id;
 
-    @ApiModelProperty(value = "昵称")
+    @ApiModelProperty(value = "昵称", example = "1")
     @NotBlank
     @Length(min = 1, max = 64)
     private String nickname;
 
-    @ApiModelProperty(value = "性别")
+    @ApiModelProperty(value = "性别", example = "1")
     @NotBlank
     @EnumValue(enumClass = UserGenderEnum.class, enumMethod = "isValidName")
     private String gender;
 
-    @ApiModelProperty(value = "头像")
+    @ApiModelProperty(value = "头像", example = "1")
     @Length(max = 256)
     private String avatar;
 
-    @ApiModelProperty(value = "状态")
+    @ApiModelProperty(value = "状态", example = "1")
     @NotBlank
     @EnumValue(enumClass = UserTypeEnum.class, enumMethod = "isValidName")
     private String type;
 
-    @ApiModelProperty(value = "账号状态")
+    @ApiModelProperty(value = "账号状态", example = "1")
     @EnumValue(enumClass = UserStatusEnum.class, enumMethod = "isValidName")
     private String status;
 
