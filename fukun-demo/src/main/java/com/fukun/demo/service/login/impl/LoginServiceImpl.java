@@ -50,6 +50,7 @@ public class LoginServiceImpl implements LoginService {
 
     @Override
     public LoginVO login(LoginQO loginQO) {
+        // 根据用户的账号和凭证类型获取该用户登录的凭证列表
         List<LoginCredential> loginCredentialList = loginCredentialClient.getLoginCredentialList(loginQO.getAccount(), loginQO.getType());
         if (loginCredentialList.size() == 0) {
             log.info("login account is nonexistent, account:{}", loginQO.getAccount());
