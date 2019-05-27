@@ -2,6 +2,7 @@ package com.fukun.demo.config.mybatis;
 
 import com.fukun.commons.dao.CrudMapper;
 import com.fukun.demo.config.db.DruidConfig;
+import org.mybatis.spring.annotation.MapperScan;
 import org.mybatis.spring.boot.autoconfigure.MybatisAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.context.annotation.Bean;
@@ -18,17 +19,22 @@ import java.util.Properties;
  */
 @Configuration
 @AutoConfigureAfter({MybatisAutoConfiguration.class, DruidConfig.class})
+@MapperScan(basePackages = {"com.fukun.demo.mapper", "com.fukun.commons.attributes.mapper"})
 public class MyBatisConfig {
 
     @Bean
     public MapperScannerConfigurer mapperScannerConfigurer() {
         MapperScannerConfigurer mapperScannerConfigurer = new MapperScannerConfigurer();
+        // 多数据源时，必须配置
         mapperScannerConfigurer.setSqlSessionFactoryBeanName("sqlSessionFactory");
+        // mapper.java文件的路径
         mapperScannerConfigurer.setBasePackage("com.fukun.demo.mapper,com.fukun.commons.attributes.mapper");
 
         Properties properties = new Properties();
         properties.setProperty("mappers", CrudMapper.class.getName());
+        // insert和update中，是否判断字符串类型!=''，少数方法会用到
         properties.setProperty("notEmpty", "false");
+        // 数据库方言（主要用于：取回主键的方式）
         properties.setProperty("IDENTITY", "MYSQL");
         properties.setProperty("ORDER", "BEFORE");
         mapperScannerConfigurer.setProperties(properties);

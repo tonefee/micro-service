@@ -40,4 +40,9 @@ public class UserController {
         return userService.selectPage(pageQO);
     }
 
+    @GetMapping("/{userId}")
+    public User getUserCredential(@PathVariable("userId") String userId) {
+        return userService.getUserCredential(userId);
+    }
+
 }

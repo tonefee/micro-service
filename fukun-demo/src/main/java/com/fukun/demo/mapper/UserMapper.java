@@ -2,6 +2,7 @@ package com.fukun.demo.mapper;
 
 import com.fukun.commons.dao.CrudMapper;
 import com.fukun.user.model.po.User;
+import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
 
 /**
@@ -12,4 +13,6 @@ import org.springframework.stereotype.Repository;
  */
 @Repository
 public interface UserMapper extends CrudMapper<User> {
+
+    User getUserCredential(@Param("id") String id);
 }

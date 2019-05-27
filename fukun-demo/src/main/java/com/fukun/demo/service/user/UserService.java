@@ -11,4 +11,6 @@ import com.fukun.user.model.po.User;
  */
 public interface UserService extends CrudService<User, String> {
 
+    User getUserCredential(String id);
+
 }
