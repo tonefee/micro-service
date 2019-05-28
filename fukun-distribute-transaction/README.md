@@ -483,6 +483,7 @@ TCC服务是由Try/Confirm/Cancel业务构成的，
 而且，考虑一下由业务系统来负责幂等性需要考虑的问题，就会发现，这无疑增大了业务系统的复杂度。
 
 [开源的分布式事务框架LCN的地址](http://www.txlcn.org/zh-cn/docs/preface.html)
+[简要配置步骤](http://www.pianshen.com/article/2877299796/)
 
 
 
