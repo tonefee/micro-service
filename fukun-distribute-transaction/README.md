@@ -482,6 +482,8 @@ TCC服务是由Try/Confirm/Cancel业务构成的，
 那么由业务系统来负责也是可以的；然而，这是一类公共问题，毫无疑问，所有TCC服务的Confirm/Cancel业务存在幂等性问题。TCC服务的公共问题应该由TCC事务框架来解决；
 而且，考虑一下由业务系统来负责幂等性需要考虑的问题，就会发现，这无疑增大了业务系统的复杂度。
 
+[开源的分布式事务框架LCN的地址](http://www.txlcn.org/zh-cn/docs/preface.html)
+
 
 
 
