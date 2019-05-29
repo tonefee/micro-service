@@ -28,7 +28,7 @@
 		</dependency>
 		<!--<dependency>
 			<groupId>com.fukun</groupId>
-			<artifactId>fukun-user-event</artifactId>
+			<artifactId>fukun-order-event</artifactId>
 			<version>${parent.version}</version>
 		</dependency>-->
         <dependency>

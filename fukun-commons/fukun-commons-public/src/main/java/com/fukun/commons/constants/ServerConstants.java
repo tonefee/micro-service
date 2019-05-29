@@ -11,5 +11,5 @@ public class ServerConstants {
     /**
      * 用户模块uri中的相关常量
      */
-    public static final String USER = "FUKUN-USER-SERVICE" + "/fukun-user";
+    public static final String USER = "FUKUN-USER-SERVICE" + "/fukun-order";
 }

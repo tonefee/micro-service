@@ -1,4 +1,4 @@
-package com.fukun.demo.config.db;
+package com.fukun.order.config.db;
 
 import com.alibaba.druid.pool.DruidDataSource;
 import lombok.Getter;
@@ -99,6 +99,48 @@ public class DruidConfig {
     public DataSourceTransactionManager testTransactionManager() {
         return new DataSourceTransactionManager(dataSource());
     }
+
+    /**
+     * 本地事务配置
+     *
+     * @return
+     */
+//    @Bean
+//    @ConditionalOnMissingBean
+//    public TransactionInterceptor transactionInterceptor() {
+//        Properties properties = new Properties();
+//        properties.setProperty("*", "PROPAGATION_REQUIRED,-Throwable");
+//        TransactionInterceptor transactionInterceptor = new TransactionInterceptor();
+//        transactionInterceptor.setTransactionManager(testTransactionManager());
+//        transactionInterceptor.setTransactionAttributes(properties);
+//        return transactionInterceptor;
+//    }
+
+    /**
+     * 分布式事务配置 设置为LCN模式
+     *
+     * @param dtxLogicWeaver
+     * @return
+     */
+//    @ConditionalOnBean(DTXLogicWeaver.class)
+//    @Bean
+//    public TxLcnInterceptor txLcnInterceptor(DTXLogicWeaver dtxLogicWeaver) {
+//        TxLcnInterceptor txLcnInterceptor = new TxLcnInterceptor(dtxLogicWeaver);
+//        Properties properties = new Properties();
+//        properties.setProperty(Transactions.DTX_TYPE, Transactions.LCN);
+//        properties.setProperty(Transactions.DTX_PROPAGATION, "REQUIRED");
+//        txLcnInterceptor.setTransactionAttributes(properties);
+//        return txLcnInterceptor;
+//    }
+
+//    @Bean
+//    public BeanNameAutoProxyCreator beanNameAutoProxyCreator() {
+//        BeanNameAutoProxyCreator beanNameAutoProxyCreator = new BeanNameAutoProxyCreator();
+//        //需要调整优先级，分布式事务在前，本地事务在后。
+//        beanNameAutoProxyCreator.setInterceptorNames("txLcnInterceptor", "transactionInterceptor");
+//        beanNameAutoProxyCreator.setBeanNames("*Impl");
+//        return beanNameAutoProxyCreator;
+//    }
 
     /**
      * 读取druid数据源相关的属性的类

@@ -72,7 +72,7 @@ public class RestControllerAspect {
         // 获取api的版本号
         String apiVersion = request.getHeader(HeaderConstants.API_VERSION);
         // 获取用户的引擎
-        String userAgent = request.getHeader("user-agent");
+        String userAgent = request.getHeader("order-agent");
 
         log.info("Started request requester [{}] method [{}] params [{}] IP [{}] callSource [{}] appVersion [{}] apiVersion [{}] userAgent [{}]", requester, methodName, params, ip, callSource, appVersion, apiVersion, userAgent);
         long start = System.currentTimeMillis();

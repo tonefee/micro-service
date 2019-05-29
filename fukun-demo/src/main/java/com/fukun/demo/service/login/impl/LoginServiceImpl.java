@@ -66,7 +66,7 @@ public class LoginServiceImpl implements LoginService {
 
         User user = userClient.getById(firstLoginCredential.getUserId());
         if (user == null) {
-            log.info("login user is null");
+            log.info("login order is null");
             throw new BusinessException(ResultCode.USER_LOGIN_ERROR);
         }
 
