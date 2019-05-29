@@ -10,7 +10,7 @@ import com.fukun.commons.util.StringUtil;
  * ③ `:` 冒号分割的前后应该是一个名词词性，冒号前后是有上下级关系的，多个单词解释一个名词时，约定使用 `_`下划线分割
  * <p>
  * 举例：
- * ① FUKUN的用户缓存 fukun:order:{userId}
+ * ① FUKUN的用户缓存 fukun:user:{userId}
  * ② FUKUN的某用户地址信息缓存 fukun:user_address
  * <p>
  *
@@ -28,7 +28,7 @@ public enum CacheKeyEnum {
     /**
      * 用户缓存，生存时长为一周
      */
-    VALUE_USERS("fukun:order:profile:%s", TimeEnum.ONE_WEEK.sec());
+    VALUE_USERS("fukun:user:profile:%s", TimeEnum.ONE_WEEK.sec());
 
     /**
      * 缓存key
