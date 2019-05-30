@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.fukun.stock.mapper.StockMapper">
+
+    <sql id="stock_table">t_stock</sql>
+
+    <update id="reduceStock">
+        UPDATE
+        <include refid="stock_table"/>
+        SET stock_num = stock_num -1
+        WHERE
+        id = #{stockId} AND stock_num &gt; 0
+    </update>
+
+
+</mapper>

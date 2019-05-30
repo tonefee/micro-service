@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CompilerConfiguration">
+    <annotationProcessing>
+      <profile name="Maven default annotation processors profile" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <module name="fukun-commons-attributes" />
+        <module name="fukun-commons-dao" />
+        <module name="fukun-commons-elasticsearch" />
+        <module name="fukun-commons-lock" />
+        <module name="fukun-commons-public" />
+        <module name="fukun-commons-service" />
+        <module name="fukun-commons-util" />
+        <module name="fukun-commons-web" />
+        <module name="fukun-demo" />
+        <module name="fukun-distribute-transaction (1)" />
+        <module name="fukun-distribute-transaction-order" />
+        <module name="fukun-distribute-transaction-stock" />
+        <module name="fukun-distribute-transaction-worker" />
+        <module name="fukun-user-api" />
+        <module name="fukun-user-client" />
+        <module name="fukun-user-event" />
+        <module name="fukun-user-model" />
+        <module name="fukun-user-service" />
+        <module name="fukun-user-token" />
+        <module name="fukun-user-worker" />
+      </profile>
+    </annotationProcessing>
+    <bytecodeTargetLevel>
+      <module name="fukun" target="1.5" />
+      <module name="fukun-commons" target="1.8" />
+      <module name="fukun-commons-attributes" target="1.8" />
+      <module name="fukun-commons-dao" target="1.8" />
+      <module name="fukun-commons-elasticsearch" target="1.8" />
+      <module name="fukun-commons-lock" target="1.8" />
+      <module name="fukun-commons-public" target="1.8" />
+      <module name="fukun-commons-service" target="1.8" />
+      <module name="fukun-commons-util" target="1.8" />
+      <module name="fukun-commons-web" target="1.8" />
+      <module name="fukun-demo" target="1.8" />
+      <module name="fukun-distribute-transaction" target="1.8" />
+      <module name="fukun-distribute-transaction (1)" target="1.8" />
+      <module name="fukun-distribute-transaction-order" target="1.8" />
+      <module name="fukun-distribute-transaction-stock" target="1.8" />
+      <module name="fukun-distribute-transaction-worker" target="1.8" />
+      <module name="fukun-parent" target="1.8" />
+      <module name="fukun-user" target="1.8" />
+      <module name="fukun-user-api" target="1.8" />
+      <module name="fukun-user-client" target="1.8" />
+      <module name="fukun-user-event" target="1.8" />
+      <module name="fukun-user-model" target="1.8" />
+      <module name="fukun-user-service" target="1.8" />
+      <module name="fukun-user-token" target="1.8" />
+      <module name="fukun-user-worker" target="1.8" />
+    </bytecodeTargetLevel>
+  </component>
+</project>

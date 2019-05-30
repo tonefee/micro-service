@@ -2,6 +2,7 @@ package com.fukun.order.service.order.impl;
 
 import com.codingapi.txlcn.tc.annotation.LcnTransaction;
 import com.fukun.commons.service.impl.BaseMySqlCrudServiceImpl;
+import com.fukun.order.client.StockClient;
 import com.fukun.order.mapper.OrderMapper;
 import com.fukun.order.model.po.OrderPO;
 import com.fukun.order.service.order.OrderService;
@@ -26,6 +27,9 @@ public class OrderServiceImpl extends BaseMySqlCrudServiceImpl<OrderPO, String> 
     @Resource
     private OrderMapper orderMapper;
 
+    @Resource
+    private StockClient stockClient;
+
     @Override
     @LcnTransaction
     @Transactional(value = TRANSACTION_MANAGER, rollbackFor = Exception.class)
@@ -34,6 +38,9 @@ public class OrderServiceImpl extends BaseMySqlCrudServiceImpl<OrderPO, String> 
         orderPO.setId(uuid);
         orderPO.setCreateTime(new Date());
         orderPO.setUpdateTime(new Date());
-        return orderMapper.addOrder(orderPO);
+        int count = orderMapper.addOrder(orderPO);
+        // 减少库存操作
+        stockClient.reduceStock("1");
+        return count;
     }
 }

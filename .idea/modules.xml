@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/fukun.iml" filepath="$PROJECT_DIR$/fukun.iml" />
+      <module fileurl="file://$PROJECT_DIR$/fukun-commons/fukun-commons.iml" filepath="$PROJECT_DIR$/fukun-commons/fukun-commons.iml" />
+      <module fileurl="file://$PROJECT_DIR$/fukun-commons/fukun-commons-attributes/fukun-commons-attributes.iml" filepath="$PROJECT_DIR$/fukun-commons/fukun-commons-attributes/fukun-commons-attributes.iml" />
+      <module fileurl="file://$PROJECT_DIR$/fukun-commons/fukun-commons-dao/fukun-commons-dao.iml" filepath="$PROJECT_DIR$/fukun-commons/fukun-commons-dao/fukun-commons-dao.iml" />
+      <module fileurl="file://$PROJECT_DIR$/fukun-commons/fukun-commons-elasticsearch/fukun-commons-elasticsearch.iml" filepath="$PROJECT_DIR$/fukun-commons/fukun-commons-elasticsearch/fukun-commons-elasticsearch.iml" />
+      <module fileurl="file://$PROJECT_DIR$/fukun-commons/fukun-commons-lock/fukun-commons-lock.iml" filepath="$PROJECT_DIR$/fukun-commons/fukun-commons-lock/fukun-commons-lock.iml" />
+      <module fileurl="file://$PROJECT_DIR$/fukun-commons/fukun-commons-public/fukun-commons-public.iml" filepath="$PROJECT_DIR$/fukun-commons/fukun-commons-public/fukun-commons-public.iml" />
+      <module fileurl="file://$PROJECT_DIR$/fukun-commons/fukun-commons-service/fukun-commons-service.iml" filepath="$PROJECT_DIR$/fukun-commons/fukun-commons-service/fukun-commons-service.iml" />
+      <module fileurl="file://$PROJECT_DIR$/fukun-commons/fukun-commons-util/fukun-commons-util.iml" filepath="$PROJECT_DIR$/fukun-commons/fukun-commons-util/fukun-commons-util.iml" />
+      <module fileurl="file://$PROJECT_DIR$/fukun-commons/fukun-commons-web/fukun-commons-web.iml" filepath="$PROJECT_DIR$/fukun-commons/fukun-commons-web/fukun-commons-web.iml" />
+      <module fileurl="file://$PROJECT_DIR$/fukun-demo/fukun-demo.iml" filepath="$PROJECT_DIR$/fukun-demo/fukun-demo.iml" />
+      <module fileurl="file://$PROJECT_DIR$/fukun-distribute-transaction/fukun-distribute-transaction.iml" filepath="$PROJECT_DIR$/fukun-distribute-transaction/fukun-distribute-transaction.iml" />
+      <module fileurl="file://$PROJECT_DIR$/fukun-distribute-transaction/fukun-distribute-transaction-order/fukun-distribute-transaction (1).iml" filepath="$PROJECT_DIR$/fukun-distribute-transaction/fukun-distribute-transaction-order/fukun-distribute-transaction (1).iml" />
+      <module fileurl="file://$PROJECT_DIR$/fukun-distribute-transaction/fukun-distribute-transaction-order/fukun-distribute-transaction-order.iml" filepath="$PROJECT_DIR$/fukun-distribute-transaction/fukun-distribute-transaction-order/fukun-distribute-transaction-order.iml" />
+      <module fileurl="file://$PROJECT_DIR$/fukun-distribute-transaction/fukun-distribute-transaction-stock/fukun-distribute-transaction-stock.iml" filepath="$PROJECT_DIR$/fukun-distribute-transaction/fukun-distribute-transaction-stock/fukun-distribute-transaction-stock.iml" />
+      <module fileurl="file://$PROJECT_DIR$/fukun-distribute-transaction/fukun-distribute-transaction-worker/fukun-distribute-transaction-worker.iml" filepath="$PROJECT_DIR$/fukun-distribute-transaction/fukun-distribute-transaction-worker/fukun-distribute-transaction-worker.iml" />
+      <module fileurl="file://$PROJECT_DIR$/fukun-parent/fukun-parent.iml" filepath="$PROJECT_DIR$/fukun-parent/fukun-parent.iml" />
+      <module fileurl="file://$PROJECT_DIR$/fukun-user/fukun-user.iml" filepath="$PROJECT_DIR$/fukun-user/fukun-user.iml" />
+      <module fileurl="file://$PROJECT_DIR$/fukun-user/fukun-user-api/fukun-user-api.iml" filepath="$PROJECT_DIR$/fukun-user/fukun-user-api/fukun-user-api.iml" />
+      <module fileurl="file://$PROJECT_DIR$/fukun-user/fukun-user-client/fukun-user-client.iml" filepath="$PROJECT_DIR$/fukun-user/fukun-user-client/fukun-user-client.iml" />
+      <module fileurl="file://$PROJECT_DIR$/fukun-user/fukun-user-event/fukun-user-event.iml" filepath="$PROJECT_DIR$/fukun-user/fukun-user-event/fukun-user-event.iml" />
+      <module fileurl="file://$PROJECT_DIR$/fukun-user/fukun-user-model/fukun-user-model.iml" filepath="$PROJECT_DIR$/fukun-user/fukun-user-model/fukun-user-model.iml" />
+      <module fileurl="file://$PROJECT_DIR$/fukun-user/fukun-user-service/fukun-user-service.iml" filepath="$PROJECT_DIR$/fukun-user/fukun-user-service/fukun-user-service.iml" />
+      <module fileurl="file://$PROJECT_DIR$/fukun-user/fukun-user-token/fukun-user-token.iml" filepath="$PROJECT_DIR$/fukun-user/fukun-user-token/fukun-user-token.iml" />
+      <module fileurl="file://$PROJECT_DIR$/fukun-user/fukun-user-worker/fukun-user-worker.iml" filepath="$PROJECT_DIR$/fukun-user/fukun-user-worker/fukun-user-worker.iml" />
+    </modules>
+  </component>
+</project>

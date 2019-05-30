@@ -13,14 +13,14 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>1.5.8.RELEASE</version>
+        <version>2.0.5.RELEASE</version>
     </parent>
 
     <properties>
         <parent.version>1.0.0-SNAPSHOT</parent.version>
         <java.version>1.8</java.version>
         <mybatis.version>3.4.5</mybatis.version>
-        <spring.boot.version>1.5.8.RELEASE</spring.boot.version>
+        <spring.boot.version>2.0.5.RELEASE</spring.boot.version>
         <spring.data.redis.version>1.8.3.RELEASE</spring.data.redis.version>
         <lombok.version>1.16.18</lombok.version>
         <swagger.version>1.5.18</swagger.version>

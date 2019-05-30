@@ -92,9 +92,15 @@ public class RedisConfig extends CachingConfigurerSupport {
 
     }
 
+//    @Bean
+//    public CacheManager cacheManager(@SuppressWarnings("rawtypes") RedisTemplate redisTemplate) {
+//        return new RedisCacheManager(redisTemplate);
+//    }
+
     @Bean
-    public CacheManager cacheManager(@SuppressWarnings("rawtypes") RedisTemplate redisTemplate) {
-        return new RedisCacheManager(redisTemplate);
+    public CacheManager cacheManager(RedisConnectionFactory factory) {
+        RedisCacheManager cacheManager = RedisCacheManager.create(factory);
+        return cacheManager;
     }
 
     @Bean
