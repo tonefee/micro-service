@@ -31,6 +31,7 @@
         <stream.rabbit.version>1.3.0.RELEASE</stream.rabbit.version>
         <fastjson.version>1.2.32</fastjson.version>
         <mybatis-spring-boot>1.2.0</mybatis-spring-boot>
+        <mybatis.spring.boot>2.0.1</mybatis.spring.boot>
         <mysql-connector>5.1.39</mysql-connector>
         <druid-version>1.0.26</druid-version>
         <druid.version>1.1.4</druid.version>
@@ -46,9 +47,10 @@
         <hibernate.validator.version>5.3.5.Final</hibernate.validator.version>
         <persistence.api.version>1.0</persistence.api.version>
         <guava.version>18.0</guava.version>
+        <google.guava.version>25.1-jre</google.guava.version>
         <spring-web.version>4.3.8.RELEASE</spring-web.version>
         <validation-api.version>1.1.0.Final</validation-api.version>
-        <hibernate-validator.version>5.3.5.Final</hibernate-validator.version>
+        <hibernate-validator.version>6.0.12.Final</hibernate-validator.version>
         <feign-core.version>9.5.0</feign-core.version>
         <tomcat-embed-core.version>8.5.14</tomcat-embed-core.version>
         <log4j-over-slf4j.version>1.7.25</log4j-over-slf4j.version>
@@ -57,6 +59,12 @@
         <httpmime.version>4.5.8</httpmime.version>
         <stream-rabbit.version>1.3.5.RELEASE</stream-rabbit.version>
         <redisson.version>3.7.2</redisson.version>
+        <spring-cloud-commons.version>2.0.0.RELEASE</spring-cloud-commons.version>
+        <txlcn.version>5.0.2.RELEASE</txlcn.version>
+        <eureka.version>1.4.0.RELEASE</eureka.version>
+        <openfeign.version>2.0.0.RELEASE</openfeign.version>
+        <finchley.version>Finchley.RELEASE</finchley.version>
+        <ribbon.version>2.2.5</ribbon.version>
 
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
