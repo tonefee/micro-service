@@ -15,7 +15,6 @@
     </parent>
 
     <modules>
-        <module>fukun-distribute-transaction-worker</module>
         <module>fukun-distribute-transaction-order</module>
         <module>fukun-distribute-transaction-stock</module>
     </modules>
