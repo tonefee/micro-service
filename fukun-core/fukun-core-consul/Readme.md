@@ -1,5 +1,6 @@
 在上个月我们知道 Eureka 2.X 遇到困难停止开发了，但其实对国内的用户影响甚小，一方面国内大都使用的是 Eureka 1.X 系列，
-另一方面 Spring Cloud 支持很多服务发现的软件，Eureka 只是其中之一，下面是 Spring Cloud 支持的服务发现软件以及特性对比：  
+另一方面 Spring Cloud 支持很多服务发现的软件，Eureka 只是其中之一，Consul作为Eureka的替代者，功能很强大，内存占有率更小。
+下面是 Spring Cloud 支持的服务发现软件以及特性对比：  
 
 ![服务发现](pictures/consul1.png)   
 
