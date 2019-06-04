@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>com.fukun</groupId>
+    <artifactId>fukun-core-consul</artifactId>
+    <version>${parent.version}</version>
+    <packaging>pom</packaging>
+    <name>fukun-core-consul</name>
+    <description>fukun-core-consul</description>
+
+    <parent>
+        <groupId>com.fukun</groupId>
+        <artifactId>fukun-parent</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+        <relativePath/>
+    </parent>
+
+    <modules>
+        <module>fukun-core-consul-producer1</module>
+        <module>fukun-core-consul-producer2</module>
+        <module>fukun-core-consul-consumer</module>
+    </modules>
+
+
+    <!--依赖管理，用于管理spring-cloud的依赖 -->
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-dependencies</artifactId>
+                <version>${finchley.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+
+</project>
