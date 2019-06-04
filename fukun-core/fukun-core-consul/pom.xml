@@ -22,6 +22,7 @@
         <module>fukun-core-consul-producer1</module>
         <module>fukun-core-consul-producer2</module>
         <module>fukun-core-consul-consumer</module>
+        <module>fukun-core-consul-producer-api</module>
     </modules>
 
 

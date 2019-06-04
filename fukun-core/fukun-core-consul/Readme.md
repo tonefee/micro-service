@@ -99,6 +99,7 @@ Eureka 保证高可用(A)和最终一致性：
 Consul 不同于 Eureka 需要单独安装，访问[consul官网](https://www.consul.io/downloads.html)下载 Consul 的最新版本，我这里是 consul_1.5.1。  
 根据不同的系统类型选择不同的安装包。  
 
+## windows下面安装consul
 我这里以 Windows 为例，下载下来是一个 consul_1.5.1_windows_amd64.zip 的压缩包，解压是是一个 consul.exe 的执行文件。  
 
 cd 到对应的目录下，使用 cmd 启动 Consul，如下：  
@@ -111,6 +112,15 @@ consul agent -dev
 pause  
 
 启动成功之后访问：http://localhost:8500，可以看到 Consul 的管理界面  
+
+## linux下面安装consul  
+在任意地方建一个名为consul的文件夹。mkdir consul  
+给这个文件夹设置权限。chmod 777 consul  
+将下载好的zip包拷贝到consul文件夹中，并解压。unzip consul_1.4.4_linux_amd64.zip  
+出现一个可执行的consul文件，可以查看consul版本。consul -version  
+在后台启动consul，其中ip就是服务器ip。nohup consul agent -dev -ui -node=consul-dev -client=10.231.xxx.xxx &  
+默认端口为8500，浏览器访问： 10.231.xxx.xxx:8500 即可，如果访问不了，有可能是防火墙配置问题。  
+
 
 ![服务发现](pictures/consul5.png)   
 
@@ -354,6 +364,179 @@ public class CallHelloController {
 发现hello consul 1和hello consul 2交替出现  
 
 说明我们已经成功的调用了 Consul 服务端提供的服务，并且实现了服务端的均衡负载功能。  
+
+# 消费者是利用Feign通过注册中心来消费接口
+
+首先引入Feign相关依赖，如下：  
+```
+  <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-consul-discovery</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-openfeign</artifactId>
+        </dependency>
+```
+在引导类加相关注解，表示启用Feign。 
+``` 
+package com.fukun.consul.consumer;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.cloud.openfeign.EnableFeignClients;
+
+/**
+ * consul消费端
+ *
+ * @author tangyifei
+ * @since 2019-6-4 14:44:37
+ * @since jdk1.8
+ */
+@SpringBootApplication
+@EnableFeignClients(basePackages = {"com.fukun"})
+public class ConsulConsumerApplication {
+    public static void main(String[] args) {
+        SpringApplication.run(ConsulConsumerApplication.class, args);
+    }
+}
+```
+## 定义Feign接口
+作为Provider服务端，是向外暴露接口的，所以将接口单独抽离出来，作为一个独立的工程模块对外服务，第三方想要使用我们定义的接口，只需添加依赖即可。  
+定义接口，其中value是provide注册在consul中的服务名。RequestMapping对应provider的具体映射。
+```  
+package com.fukun.producer.api;
+
+import org.springframework.cloud.openfeign.FeignClient;
+import org.springframework.web.bind.annotation.RequestMapping;
+
+/**
+ * 服务实现
+ *
+ * @author tangyifei
+ * @since 2019-5-24 09:24:06
+ */
+@FeignClient(value = "consul-service-producer")
+public interface HelloService {
+
+    /**
+     * 负载均衡返回结果
+     *
+     * @return 结果
+     */
+    @RequestMapping("/hello")
+    String hello();
+}
+```
+在provider工程中，将Feign接口工程作为依赖引入进来。
+
+```
+ <dependency>
+            <groupId>com.fukun</groupId>
+            <artifactId>fukun-core-consul-producer-api</artifactId>
+            <version>${parent.version}</version>
+ </dependency>
+```
+在provider工程中，新建类来实现刚才写的接口。  
+
+```
+package com.fukun.consul.producer1.controller;
+
+import com.fukun.producer.api.HelloService;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+/**
+ * 测试控制器
+ *
+ * @author tangyifei
+ * @since 2019-6-4 14:47:08
+ * @since JDK1.8
+ */
+@RestController
+public class HelloController implements HelloService {
+
+    @Override
+    @RequestMapping("/hello")
+    public String hello() {
+        return "hello consul 1";
+    }
+}
+```
+`这样做的好处是，provider、consumer以及feign做了强关联，三者必须统一，且只能够服务之间调用，并不能通过web端调用。`  
+
+在consumer工程中引入feign依赖  
+```  
+  <dependency>
+            <groupId>com.fukun</groupId>
+            <artifactId>fukun-core-consul-producer-api</artifactId>
+            <version>${parent.version}</version>
+  </dependency>
+```
+在consumer工程中编写调用类  
+
+```
+package com.fukun.consul.consumer.controller;
+
+import com.fukun.producer.api.HelloService;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import javax.annotation.Resource;
+
+/**
+ * 验证负载均衡
+ *
+ * @author tangyifei
+ * @since 2019-6-4 15:48:52
+ * @since JDK1.8
+ */
+@RestController
+public class CallHelloController {
+
+//    private final static String SERVICE_ID = "consul-service-producer";
+//
+//    @Autowired
+//    private LoadBalancerClient loadBalancer;
+
+    @Resource
+    private HelloService helloService;
+
+//    @RequestMapping("/call")
+//    public String call() {
+//        ServiceInstance serviceInstance = loadBalancer.choose(SERVICE_ID);
+//        System.out.println("服务地址：" + serviceInstance.getUri());
+//        System.out.println("服务名称：" + serviceInstance.getServiceId());
+//
+//        String callServiceResult = new RestTemplate().getForObject(serviceInstance.getUri().toString() + "/hello", String.class);
+//        System.out.println(callServiceResult);
+//        return callServiceResult;
+//
+//    }
+
+    @RequestMapping("/call")
+    public String call() {
+        return helloService.hello();
+    }
+}
+```
+这样三者之间的关系就完成了，分别启动consul、provider、consumer，然后在浏览器中访问consumer规定的资源路径即可实现远程调用，比如访问http://localhost:8504/call
+发现hello consul 1和hello consul 2交替出现 。
+
+
 
 
 
