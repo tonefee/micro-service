@@ -10,6 +10,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.ClientHttpResponse;
+import org.springframework.stereotype.Component;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.ByteArrayInputStream;
@@ -26,6 +27,7 @@ import java.util.Map;
  * @since jdk1.8
  */
 @Slf4j
+@Component
 public class MyGatewayFilter extends ZuulFilter implements FallbackProvider {
 
     /**

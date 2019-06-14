@@ -22,14 +22,4 @@ public class ZuulApplication {
     public static void main(String[] args) {
         SpringApplication.run(ZuulApplication.class, args);
     }
-
-    /**
-     * 创建网关过滤器放到spring容器中
-     *
-     * @return 网关过滤器
-     */
-//    @Bean
-//    public MyGatewayFilter myGatewayFilter() {
-//        return new MyGatewayFilter();
-//    }
 }
