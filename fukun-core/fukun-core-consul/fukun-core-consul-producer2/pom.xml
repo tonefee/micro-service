@@ -45,14 +45,13 @@
     <build>
         <plugins>
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-jar-plugin</artifactId>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
-                    <classifier></classifier>
+                    <executable>true</executable>
                 </configuration>
             </plugin>
         </plugins>
     </build>
-
 
 </project>
