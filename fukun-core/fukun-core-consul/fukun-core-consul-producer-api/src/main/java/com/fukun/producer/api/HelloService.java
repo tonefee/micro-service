@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
  *
  * @author tangyifei
  * @since 2019-5-24 09:24:06
+ * @since JDK1.8
  */
 @FeignClient(value = "consul-service-producer")
 public interface HelloService {
