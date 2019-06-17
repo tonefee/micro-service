@@ -1,4 +1,4 @@
-package com.fukun.consul.consumer.filter;
+package com.fukun.zuul.filter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.zuul.ZuulFilter;

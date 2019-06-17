@@ -1,4 +1,4 @@
-package com.fukun.consul.consumer;
+package com.fukun.zuul;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
