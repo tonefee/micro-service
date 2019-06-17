@@ -538,7 +538,7 @@ public class CallHelloController {
 发现hello consul 1和hello consul 2交替出现 。
 
 备注：  
-了解springCloudConsul的具体配置请查看fukun-core-consul-producer1中的资源属性文件application.properties项目。
+了解springCloudConsul的具体配置请查看fukun-core-consul-producer1中的资源属性文件application.properties文件。
 
 
 
