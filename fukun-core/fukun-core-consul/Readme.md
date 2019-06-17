@@ -537,6 +537,9 @@ public class CallHelloController {
 这样三者之间的关系就完成了，分别启动consul、provider、consumer，然后在浏览器中访问consumer规定的资源路径即可实现远程调用，比如访问http://localhost:8504/call
 发现hello consul 1和hello consul 2交替出现 。
 
+备注：  
+了解springCloudConsul的具体配置请查看fukun-core-consul-producer1中的资源属性文件application.properties项目。
+
 
 
 
