@@ -18,6 +18,10 @@ public class ServiceController {
 
     private final static String SERVICE_ID = "consul-service-producer";
 
+    /**
+     * 通过LoadBalancerClient的choose(service-id)方法随机选择一个对应的应用名称的服务实例,
+     * 然后使用 RestTemplate()来模拟发送请求。
+     */
     @Autowired
     private LoadBalancerClient loadBalancer;
 
@@ -29,6 +33,7 @@ public class ServiceController {
      */
     @RequestMapping("/services")
     public Object services() {
+        // 查询服务名称的所有实例信息
         return discoveryClient.getInstances(SERVICE_ID);
     }
 
@@ -37,6 +42,7 @@ public class ServiceController {
      */
     @RequestMapping("/discover")
     public Object discover() {
+        // 随机选择一个服务名称对应的实例返回
         return loadBalancer.choose(SERVICE_ID).getUri().toString();
     }
 
