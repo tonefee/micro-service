@@ -10,15 +10,10 @@
     <name>fukun-parent</name>
     <description>fukun-parent</description>
 
-    <!--由于分布式事务LCN框架使用的spring-boot版本是2.0.5.RELEASE，
-        springCloud使用的版本是Finchley版本，如果分布式事务fukun-distribute-transactio这个模块
-        配置以下的spring-boot和spring-cloud版本出现错误，那么
-        fukun-distribute-transaction这个模块请单独配置spring-boot的2.0.5.RELEASE和springCloud
-        的Finchley.RELEASE版本-->
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>2.0.6.RELEASE</version>
+        <version>2.0.5.RELEASE</version>
     </parent>
 
     <properties>
