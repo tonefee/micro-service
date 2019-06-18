@@ -104,7 +104,48 @@ Spring Cloud Gateway 网关路由有两种配置方式：
 	<artifactId>spring-cloud-starter-gateway</artifactId>
 </dependency>
 ```
-Spring Cloud Gateway 是使用 netty+webflux 实现因此不需要再引入 web 模块。  
+Spring Cloud Gateway 是使用 netty+webflux 实现因此不需要再引入 web 模块。    
+我们先来测试一个最简单的请求转发。  
+```
+spring:
+  cloud:
+    gateway:
+      routes:
+      - id: neo_route
+        uri: http://www.ityouknow.com
+        predicates:
+        - Path=/spring-cloud
+```
+各字段含义如下：  
+id：我们自定义的路由 ID，保持唯一。      
+uri：目标服务地址。  
+predicates：路由条件，Predicate 接受一个输入参数，返回一个布尔值结果。该接口包含多种默认方法来将 Predicate 组合成其他复杂的逻辑（比如：与，或，非）。  
+filters：过滤规则。  
+上面这段配置的意思是，配置了一个 id 为 neo_route 的路由规则，当访问地址 http://localhost:9999/spring-cloud时会自动转发到地址：
+http://www.ityouknow.com/spring-cloud。配置完成启动项目即可在浏览器访问进行测试。  
+转发功能同样可以通过代码来实现，我们可以在启动类 GateWayApplication 中添加方法 customRouteLocator() 来定制转发规则。  
+```
+@SpringBootApplication
+public class GateWayApplication {
+
+	public static void main(String[] args) {
+		SpringApplication.run(GateWayApplication.class, args);
+	}
+
+	@Bean
+	public RouteLocator customRouteLocator(RouteLocatorBuilder builder) {
+		return builder.routes()
+				.route("path_route", r -> r.path("/about")
+						.uri("http://ityouknow.com"))
+				.build();
+	}
+
+}
+```
+上面配置了一个 id 为 path_route 的路由，当访问地址http://localhost:9999/about时会自动转发到地址：http://www.ityouknow.com/about和上面的转发效果一样，
+只是这里转发的是以项目地址/about格式的请求地址。  
+实际项目使用中可以将 uri 指向对外提供服务的项目地址，统一对外输出接口。  
+
 
 
 
