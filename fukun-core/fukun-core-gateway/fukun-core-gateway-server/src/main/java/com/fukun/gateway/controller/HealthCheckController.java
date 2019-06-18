@@ -1,4 +1,4 @@
-package com.fukun.consul.consumer.controller;
+package com.fukun.gateway.controller;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
