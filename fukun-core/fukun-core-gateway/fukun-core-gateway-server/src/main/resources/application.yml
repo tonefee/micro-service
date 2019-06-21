@@ -25,14 +25,20 @@ spring:
            enabled: true
        routes:
              # 自定义的路由 ID，保持唯一
-             - id: neo_route
-               # 目标服务地址
-               uri: http://www.ityouknow.com
+             - id: add_request_parameter_route
+               # 目标服务地址，针对单个服务
+               #uri: http://localhost:8501
+               #格式为：lb://应用注册服务名，针对多个服务，主要是服务中心中的服务，比如consul中的服务实例
+               uri: lb://consul-service-producer
+               # 设置所有的 GET 方法都会自动添加foo=bar
+               filters:
+               - AddRequestParameter=foo, bar
                # 路由条件，Predicate 接受一个输入参数，返回一个布尔值结果。该接口包含多种默认方法来将 Predicate 组合成其他复杂的逻辑（比如：与，或，非）。
                # predicate定义了一组匹配规则
                predicates:
-               # 当访问地址 http://localhost:8080/spring-cloud时会自动转发到地址：http://www.ityouknow.com/spring-cloud
-               - Path=/spring-cloud
+               # 当访问地址 http://localhost:9999/foo时会自动转发到地址：http://localhost:8501/foo
+               #- Path=/foo
+               - Method=GET
 
 server:
  port: 9999

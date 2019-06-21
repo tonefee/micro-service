@@ -25,4 +25,9 @@ public class HelloController implements HelloService {
     public String healthCheck() {
         return "health";
     }
+
+    @GetMapping("/foo")
+    public String foo(String foo) {
+        return "hello " + foo + "2";
+    }
 }

@@ -447,7 +447,70 @@ http://网关地址：端口/服务中心注册 serviceId/具体的url
 
 ![服务网关](pictures/p7.png)  
 
-不断刷新，发现交替打印hello consul 1与hello consul 2，说明后端服务自动进行了均衡负载。   
+不断刷新，发现交替打印hello consul 1与hello consul 2，说明后端服务自动进行了均衡负载。 
+
+# 基于 Filter(过滤器) 实现的高级功能
+Spring Cloud Gateway 的 Filter 的生命周期不像 Zuul 的那么丰富，它只有两个：“pre” 和 “post”。  
+PRE： 这种过滤器在请求被路由之前调用。我们可利用这种过滤器实现身份验证、在集群中选择请求的微服务、记录调试信息等。  
+POST：这种过滤器在路由到微服务以后执行。这种过滤器可用来为响应添加标准的 HTTP Header、收集统计信息和指标、将响应从微服务发送给客户端等。   
+
+Spring Cloud Gateway 的 Filter 分为两种：GatewayFilter 与 GlobalFilter。GlobalFilter 会应用到所有的路由上，
+而 GatewayFilter 将应用到单个路由或者一个分组的路由上。    
+
+Spring Cloud Gateway 内置了9种 GlobalFilter，比如 Netty Routing Filter、LoadBalancerClient Filter、Websocket Routing Filter 等，
+根据名字即可猜测出这些 Filter 的作用，[Global Filters](https://cloud.spring.io/spring-cloud-gateway/single/spring-cloud-gateway.html#_global_filters)
+
+利用 GatewayFilter 可以修改请求的 Http 的请求或者响应，或者根据请求或者响应做一些特殊的限制。 更多时候我们会利用 GatewayFilter 做一些具体的路由配置，
+下面我们做一些简单的介绍。  
+
+## 使用filter
+
+### 单个服务的路由转发
+我们以 AddRequestParameter GatewayFilter 来演示一下，如何在项目中使用 GatewayFilter，AddRequestParameter GatewayFilter 可以在请求中添加指定参数。  
+
+修改fukun-core-gateway-server的application.yml文件，添加如下内容：
+
+```  
+spring:
+  cloud:
+    gateway:
+      routes:
+      - id: add_request_parameter_route
+        # 目标服务地址
+        uri: http://localhost:8501
+        filters:
+        - AddRequestParameter=foo, bar
+        predicates:
+        # 当访问地址 http://localhost:9999/foo时会自动转发到地址：http://localhost:8501/foo
+        - Path=/foo
+```  
+
+这样就会给匹配的每个请求添加上foo=bar的参数和值。      
+访问地址http://localhost:8501/foo页面返回：hello null1，说明并没有接受到参数 foo；
+通过网关来调用此服务，浏览器访问地址http://localhost:9999/foo页面返回：hello bar1，
+说明成功接收到参数 foo 参数的值 bar ,证明网关在转发的过程中已经通过 filter 添加了设置的参数和值。  
+
+### 服务化路由转发
+上面我们使用 uri 指定了一个服务转发地址，单个服务这样使用问题不大，但是我们在注册中心往往会使用多个服务来共同支撑整个服务的使用，  
+这个时候我们就期望可以将 Filter 作用到每个应用的实例上，spring cloud gateway 提供了这样的功能，只需要简单配置即可。  
+
+修改fukun-core-gateway-server中的application.yml文件如下：  
+uri: lb://consul-service-producer  
+修改完之后，重新启动项目 fukun-core-gateway-server、fukun-core-consul-producer1，fukun-core-consul-producer2
+浏览器访问地址:http://localhost:9999/hello页面交替出现hello consul 1和hello consul 2。   
+证明请求被均匀的转发到后端的服务， 那怎么实现的呢？  
+其实这里使用了全局过滤器 LoadBalancerClient ，当路由配置中 uri 所用的协议为 lb 时（以uri: lb://consul-service-producer为例），
+gateway 将使用 LoadBalancerClient 把 consul-service-producer 通过 consul 解析为实际的主机和端口，并进行负载均衡。    
+
+
+
+ 
+
+
+
+ 
+
+
 
    
 
