@@ -25,6 +25,7 @@ spring:
                # 目标服务地址
                uri: http://www.ityouknow.com
                # 路由条件，Predicate 接受一个输入参数，返回一个布尔值结果。该接口包含多种默认方法来将 Predicate 组合成其他复杂的逻辑（比如：与，或，非）。
+               # predicate定义了一组匹配规则
                predicates:
                # 当访问地址 http://localhost:8080/spring-cloud时会自动转发到地址：http://www.ityouknow.com/spring-cloud
                - Path=/spring-cloud
