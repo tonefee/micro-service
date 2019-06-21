@@ -653,10 +653,70 @@ public class LimitFlowStrategy {
 
 #### 令牌桶算法来限流
 每秒向令牌桶放N个令牌，令牌桶的最大容积是M个，那么如果请求过来了，会从令牌桶中拿出一个令牌，令牌桶还剩M-1个。以此类推，
-当令牌桶的数量还剩0个的时候，就拒绝接受请求。所以这个情况可以支持突发性的请求情况。就是我一直很小量的请求，但是突然来了一大波请求，令牌桶容积决定了它能接受的最大突发情况。  
+当令牌桶的数量还剩0个的时候，就拒绝接受请求。所以这个情况可以支持突发性的请求情况。就是我一直很小量的请求，但是突然来了一大波请求，令牌桶容积决定了它能接受的最大突发情况。    
 
+### 熔断路由器
+Spring Cloud Gateway 也可以利用 Hystrix 的熔断特性，在流量过大时进行服务降级，同样我们还是首先给项目添加上依赖。   
+```
+<dependency>
+  <groupId>org.springframework.cloud</groupId>
+  <artifactId>spring-cloud-starter-netflix-hystrix</artifactId>
+</dependency>
+```
+配置示例   
+``` 
+spring:
+  cloud:
+    gateway:
+      routes:
+      - id: hystrix_route
+        uri: http://example.org
+        filters:
+        - Hystrix=myCommandName
+```
+配置后，gateway 将使用 myCommandName 作为名称生成 HystrixCommand 对象来进行熔断管理。如果想添加熔断后的回调内容，需要在添加一些配置。  
+```
+spring:
+  cloud:
+    gateway:
+      routes:
+      - id: hystrix_route
+        uri: lb://consul-service-producer
+        predicates:
+        - Method=GET
+        filters:
+        - name: Hystrix
+          args:
+            name: fallbackcmd
+            fallbackUri: forward:/fallback
+```
+fallbackUri: forward:/fallback配置了 fallback 时要回调的路径，当Hystrix 的 fallback 被调用时，请求将转发到/fallback URI。  
 
-      
+fukun-core-consul-producer1端定义一个方法，并且让线程睡5秒再次响应，如下： 
+``` 
+    @GetMapping("/timeout")
+    public String timeout() {
+        try {
+            //睡5秒，网关Hystrix3秒超时，会触发熔断降级操作
+            Thread.sleep(5000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        return "timeout1";
+    }
+```
+然后fukun-core-gateway-server配置熔断器的熔断超时为3秒，如下：
+```  
+hystrix:
+  command:
+    default:
+      execution:
+        isolation:
+          strategy: SEMAPHORE
+          thread:
+            timeoutInMilliseconds: 3000
+```
+然后分别启动 fukun-core-consul-producer1 和 fukun-core-gateway-server服务，然后调用http://localhost:9999/timeout出现超时回调走熔断的响应。  
 
 
    

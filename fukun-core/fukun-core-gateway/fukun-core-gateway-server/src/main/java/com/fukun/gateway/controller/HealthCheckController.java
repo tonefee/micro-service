@@ -17,4 +17,9 @@ public class HealthCheckController {
     public String healthCheck() {
         return "health";
     }
+
+    @GetMapping("/fallback")
+    public String fallback() {
+        return "超时回调走熔断";
+    }
 }

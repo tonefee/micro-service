@@ -44,6 +44,13 @@ spring:
                     redis-rate-limiter.burstCapacity: 3
                     #使用 SpEL 按名称引用 bean
                     key-resolver: "#{@ipKeyResolver}"
+               #gateway 将使用 myCommandName 作为名称生成 HystrixCommand 对象来进行熔断管理
+               #- Hystrix=myCommandName
+               #fallbackUri: forward:/fallback配置了 fallback 时要会调的路径，当Hystrix 的 fallback 被调用时，请求将转发到/fallback URI。
+               - name: Hystrix
+                 args:
+                    name: fallbackcmd
+                    fallbackUri: forward:/fallback
                # 路由条件，Predicate 接受一个输入参数，返回一个布尔值结果。该接口包含多种默认方法来将 Predicate 组合成其他复杂的逻辑（比如：与，或，非）。
                # predicate定义了一组匹配规则
                predicates:
@@ -74,4 +81,15 @@ server:
 logging:
    level:
      org.springframework.cloud.gateway: debug
+
+# hystrix 信号量隔离，3秒后自动超时
+hystrix:
+  command:
+    default:
+      execution:
+        isolation:
+          strategy: SEMAPHORE
+          thread:
+            timeoutInMilliseconds: 3000
+
 
