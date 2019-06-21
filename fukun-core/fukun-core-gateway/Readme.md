@@ -501,6 +501,166 @@ uri: lb://consul-service-producer
 证明请求被均匀的转发到后端的服务， 那怎么实现的呢？  
 其实这里使用了全局过滤器 LoadBalancerClient ，当路由配置中 uri 所用的协议为 lb 时（以uri: lb://consul-service-producer为例），
 gateway 将使用 LoadBalancerClient 把 consul-service-producer 通过 consul 解析为实际的主机和端口，并进行负载均衡。    
+上面说到全局过滤器作用在所有的路由上，然而GateWayFilter作用于单个路由上或者一个分组的路由上。
+
+###  修改请求路径的过滤器
+
+#### StripPrefix Filter
+StripPrefix Filter 是一个请求路径截取的功能，我们可以利用这个功能来做特殊业务的转发。  
+application.yml 配置如下：  
+```
+spring:
+  cloud:
+    gateway:
+      routes:
+      - id: nameRoot
+        uri: http://nameservice
+        predicates:
+        - Path=/name/**
+        filters:
+        - StripPrefix=2
+```
+上面这个配置的例子表示，当请求路径匹配到/name/**会将包含name和后边的字符串截取再进行转发，
+ StripPrefix=2就代表截取路径的个数，这样配置后当请求/name/bar/foo后端匹配到的请求路径就会变成http://nameservice/foo。  
+ 
+我们还是在fukun-core-gateway-server项目中进行测试，修改 application.yml 如下：  
+```
+spring:
+  cloud:
+     routes:
+     - id: nameRoot
+       uri: lb://consul-service-producer
+       predicates:
+       - Path=/tang/**
+       filters:
+       - StripPrefix=3
+```
+配置完后重启 fukun-core-gateway-server 项目，访问地址：http://localhost:9999/tang/yi/fei/hello页面会交替显示hello consul 1和hello consul 2。    
+和直接访问地址 http://localhost:9999/hello展示的效果一致，说明请求路径中的 /tang/yi/fei/hello 已经被截取。    
+
+#### PrefixPath Filter
+PrefixPath Filter 的作用和 StripPrefix 正相反，是在 URL 路径前面添加一部分的前缀   
+``` 
+spring:
+  cloud:
+    gateway:
+      routes:
+      - id: prefixpath_route
+        uri: lb://consul-service-producer
+        predicates:
+        - Path=/tang/**
+        filters:
+        - PrefixPath=/fukun
+```
+### 限速路由器
+
+限速在高并发场景中比较常用的手段之一，可以有效的保障服务的整体稳定性，
+Spring Cloud Gateway 提供了基于 Redis 的限流方案。所以我们首先需要添加对应的依赖包spring-boot-starter-data-redis-reactive。  
+注意使用spring-boot的2.0.5版本引用不到该jar包，所以升级spring-boot的版本为2.0.6版本，如下：  
+```
+<dependency>
+  <groupId>org.springframework.cloud</groupId>
+  <artifactId>spring-boot-starter-data-redis-reactive</artifactId>
+</dependency>
+```
+配置文件中需要添加 Redis 地址和限流的相关配置   
+```   
+spring:
+  redis:
+      # redis的数据库索引，默认为0
+      database: 0
+      host: 192.168.0.49
+      port: 6379
+      password: '##!zggc5055'
+  application:
+     name: fukun-core-gateway-server
+  cloud:
+     gateway:
+       # 是否与服务注册和服务发现组件进行结合，通过 serviceId 转发到具体的服务实例。默认为 false，设为 true 便开启通过服务中心的自动根据 serviceId 创建路由的功能。
+       discovery:
+         locator:
+           enabled: true
+       routes:
+             # 自定义的路由 ID，保持唯一
+             - id: add_request_parameter_route
+               # 目标服务地址，针对单个服务
+               #uri: http://localhost:8501
+               #格式为：lb://应用注册服务名，针对多个服务，主要是服务中心中的服务，比如consul中的服务实例
+               uri: lb://consul-service-producer
+               filters:
+               #转发请求之前，所有的 GET 方法都会自动添加foo=bar的请求参数
+               #- AddRequestParameter=foo, bar
+               #当请求/tang/yi/fei/hello后端匹配到的请求路径就会变成http://IP:PORT/hello。
+               #- StripPrefix=3
+               #filter 名称必须是 RequestRateLimiter
+               - name: RequestRateLimiter
+                 args:
+                    #redis-rate-limiter.replenishRate：允许用户每秒处理多少个请求，令牌桶放入的速度
+                    redis-rate-limiter.replenishRate: 1
+                    #令牌桶的容量，允许在一秒钟内完成的最大请求数，令牌桶的容积
+                    redis-rate-limiter.burstCapacity: 3
+                    #使用 SpEL 按名称引用 bean
+                    key-resolver: "#{@ipKeyResolver}"
+               # 路由条件，Predicate 接受一个输入参数，返回一个布尔值结果。该接口包含多种默认方法来将 Predicate 组合成其他复杂的逻辑（比如：与，或，非）。
+               # predicate定义了一组匹配规则
+               predicates:
+               # 当访问地址 http://localhost:9999/foo时会自动转发到地址：http://localhost:8501/foo
+               #- Path=/tang/**
+               - Method=GET
+```
+filter 名称必须是 RequestRateLimiter  
+redis-rate-limiter.replenishRate：允许用户每秒处理多少个请求  
+redis-rate-limiter.burstCapacity：令牌桶的容量，允许在一秒钟内完成的最大请求数  
+key-resolver：使用 SpEL 按名称引用 bean    
+项目中设置限流的策略，创建 限流相关的配置类LimitFlowStrategy。  
+```
+package com.fukun.gateway.config;
+
+import org.springframework.cloud.gateway.filter.ratelimit.KeyResolver;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import reactor.core.publisher.Mono;
+
+import java.util.Objects;
+
+/**
+ * 配置相应的限流策略
+ *
+ * @author tangyifei
+ * @since 2019年6月21日16:05:12
+ */
+@Configuration
+public class LimitFlowStrategy {
+
+    /**
+     * 根据请求参数中的 foo字段来限流，也可以设置根据请求IP地址来限流
+     * 这样网关就可以根据不同策略来对请求进行限流了。
+     *
+     * @return 限流策略
+     */
+    @Bean
+    KeyResolver ipKeyResolver() {
+        // 那么使劲刷新url，出现429 too many request 就表示成功了
+        return exchange -> Mono.just(Objects.requireNonNull(exchange.getRequest().getRemoteAddress()).getHostName());
+//        return exchange -> Mono.just(exchange.getRequest().getRemoteAddress().getHostName());
+//        return exchange -> Mono.just(exchange.getRequest().getQueryParams().getFirst("foo"));
+    }
+}
+```
+上面的这个key resolver会生成一个key，为这个key生成一个令牌桶。如果是客户端ip，那么就是为每个ip生成一个令牌桶。如果是个固定值，就是全局的令牌桶。  
+
+那么使劲刷新url（http://localhost:9999/hello），出现429 too many request 就表示成功了。  
+
+#### 令牌桶算法来限流
+每秒向令牌桶放N个令牌，令牌桶的最大容积是M个，那么如果请求过来了，会从令牌桶中拿出一个令牌，令牌桶还剩M-1个。以此类推，
+当令牌桶的数量还剩0个的时候，就拒绝接受请求。所以这个情况可以支持突发性的请求情况。就是我一直很小量的请求，但是突然来了一大波请求，令牌桶容积决定了它能接受的最大突发情况。  
+
+
+      
+
+
+   
+
 
 
 

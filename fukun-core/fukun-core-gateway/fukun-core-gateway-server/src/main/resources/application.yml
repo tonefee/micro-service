@@ -15,7 +15,7 @@ spring:
           instanceId: ${spring.application.name}:${server.port}
           preferIpAddress: true
           healthCheckInterval: 10s
-          healthCheckUrl: http://${spring.cloud.client.ipAddress}:${server.port}/health
+          healthCheckUrl: http://${spring.cloud.client.ip-address}:${server.port}/health
           heartbeat:
              enabled: true
      gateway:
@@ -30,16 +30,43 @@ spring:
                #uri: http://localhost:8501
                #格式为：lb://应用注册服务名，针对多个服务，主要是服务中心中的服务，比如consul中的服务实例
                uri: lb://consul-service-producer
-               # 设置所有的 GET 方法都会自动添加foo=bar
                filters:
-               - AddRequestParameter=foo, bar
+               #转发请求之前，所有的 GET 方法都会自动添加foo=bar的请求参数
+               #- AddRequestParameter=foo, bar
+               #当请求/tang/yi/fei/hello后端匹配到的请求路径就会变成http://IP:PORT/hello。
+               #- StripPrefix=3
+               #filter 名称必须是 RequestRateLimiter
+               - name: RequestRateLimiter
+                 args:
+                    #redis-rate-limiter.replenishRate：允许用户每秒处理多少个请求，令牌桶放入的速度
+                    redis-rate-limiter.replenishRate: 1
+                    #令牌桶的容量，允许在一秒钟内完成的最大请求数，令牌桶的容积
+                    redis-rate-limiter.burstCapacity: 3
+                    #使用 SpEL 按名称引用 bean
+                    key-resolver: "#{@ipKeyResolver}"
                # 路由条件，Predicate 接受一个输入参数，返回一个布尔值结果。该接口包含多种默认方法来将 Predicate 组合成其他复杂的逻辑（比如：与，或，非）。
                # predicate定义了一组匹配规则
                predicates:
                # 当访问地址 http://localhost:9999/foo时会自动转发到地址：http://localhost:8501/foo
-               #- Path=/foo
+               #- Path=/tang/**
                - Method=GET
-
+  redis:
+    # redis的数据库索引，默认为0
+    database: 0
+    host: 192.168.0.49
+    port: 6379
+    password: '##!zggc5055'
+#    jedis:
+#       pool:
+#         # 连接池最大连接数，如果为负数表示没有限制
+#         max-active: 8
+#         # 连接池中最大空闲连接数
+#         max-idle: 5
+#         # 连接池中最小空闲连接数
+#         min-idle: 0
+#         # 当池内没有可用的连接时，最大等待时间
+#         max-wait: 3000
+#    timeout: 10000
 server:
  port: 9999
 
