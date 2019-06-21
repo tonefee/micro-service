@@ -51,6 +51,21 @@ spring:
                  args:
                     name: fallbackcmd
                     fallbackUri: forward:/fallback
+               #Retry GatewayFilter 通过这四个参数来控制重试机制： retries, statuses, methods, 和 series。
+               - name: Retry
+                 args:
+                    #retries：重试次数，默认值是 3 次
+                    retries: 3
+                    #HTTP 的状态返回码，取值请参考：org.springframework.http.HttpStatus
+                    statuses:
+                     - BAD_GATEWAY
+                    #指定哪些方法的请求需要进行重试逻辑，默认值是 GET 方法，取值参考：org.springframework.http.HttpMethod
+                    methods:
+                     - GET
+                     - POST
+                    # 一些列的状态码配置，取值参考：org.springframework.http.HttpStatus.Series。符合的某段状态码才会进行重试逻辑，默认值是 SERVER_ERROR，值是 5，也就是 5XX(5 开头的状态码)，共有5 个值。
+                    series:
+                     - SERVER_ERROR
                # 路由条件，Predicate 接受一个输入参数，返回一个布尔值结果。该接口包含多种默认方法来将 Predicate 组合成其他复杂的逻辑（比如：与，或，非）。
                # predicate定义了一组匹配规则
                predicates:
