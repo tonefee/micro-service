@@ -384,6 +384,75 @@ spring:
 
 一个请求满足多个路由的谓词条件时，请求只会被首个成功匹配的路由转发。  
 
+# spring-cloud-gateway结合服务中心进行相关的路由转发
+
+Spring Cloud Gateway 提供了一种默认转发的能力，只要将 Spring Cloud Gateway 注册到服务中心，Spring Cloud Gateway 默认就会代理服务中心的所有服务。  
+
+## 准备服务和注册中心
+我这里还是使用之前的服务中心consul，使用之前的服务fukun-core-consul-producer1，如果使用eureka作为服务中心你需要升级eureka服务端和fukun-core-consul-producer1
+的springCloud的版本为Finchley.SR2，eureka服务端的pom中的eureka的依赖包需要升级：
+升级前：  
+```
+<dependency>
+    <groupId>org.springframework.cloud</groupId>
+    <artifactId>spring-cloud-starter-eureka-server</artifactId>
+</dependency>
+```
+升级后：
+```  
+<dependency>
+    <groupId>org.springframework.cloud</groupId>
+    <artifactId>spring-cloud-starter-netflix-eureka-server</artifactId>
+</dependency>
+```
+相关的eureka客户端的pom文件中的eureka的client依赖包升级如下：  
+升级前：  
+```   
+<dependency>
+    <groupId>org.springframework.cloud</groupId>
+    <artifactId>spring-cloud-starter-eureka</artifactId>
+</dependency>
+```
+升级后：  
+```
+<dependency>
+    <groupId>org.springframework.cloud</groupId>
+    <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
+</dependency>
+```
+由于我的项目使用的就是Finchley.SR2，所以不需要更改，我使用的consul作为服务中心，所以也不需要改动。  
+这里我启动以前的fukun-core-consul-producer1和fukun-core-consul-producer2两个服务，这两个服务同属于
+consul-service-producer，打开服务中心的控制台进行查看，如下：  
+
+![服务网关](pictures/p6.png)    
+
+然后修改fukun-core-gateway-server的application.yml 配置文件内容如下：   
+```  
+spring:
+     gateway:
+       # 是否与服务注册和服务发现组件进行结合，通过 serviceId 转发到具体的服务实例。默认为 false，设为 true 便开启通过服务中心的自动根据 serviceId 创建路由的功能。
+       discovery:
+         locator:
+           enabled: true
+
+# 调整相关gateway 包的 log 级别，以便排查问题
+logging:
+   level:
+     org.springframework.cloud.gateway: debug
+```
+然后启动fukun-core-gateway-server服务，服务中心consul中已经注册了fukun-core-gateway-server实例， 
+将 Spring Cloud Gateway 注册到服务中心之后，网关会自动代理所有在注册中心中的服务，访问这些服务的语法为：   
+http://网关地址：端口/服务中心注册 serviceId/具体的url    
+访问如下：     
+
+![服务网关](pictures/p7.png)  
+
+不断刷新，发现交替打印hello consul 1与hello consul 2，说明后端服务自动进行了均衡负载。   
+
+   
+
+
+
 
 
 

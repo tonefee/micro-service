@@ -19,6 +19,10 @@ spring:
           heartbeat:
              enabled: true
      gateway:
+       # 是否与服务注册和服务发现组件进行结合，通过 serviceId 转发到具体的服务实例。默认为 false，设为 true 便开启通过服务中心的自动根据 serviceId 创建路由的功能。
+       discovery:
+         locator:
+           enabled: true
        routes:
              # 自定义的路由 ID，保持唯一
              - id: neo_route
@@ -32,4 +36,9 @@ spring:
 
 server:
  port: 9999
+
+# 调整相关gateway 包的 log 级别，以便排查问题
+logging:
+   level:
+     org.springframework.cloud.gateway: debug
 
