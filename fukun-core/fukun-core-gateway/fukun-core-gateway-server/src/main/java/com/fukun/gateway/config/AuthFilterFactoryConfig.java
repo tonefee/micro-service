@@ -1,6 +1,5 @@
 package com.fukun.gateway.config;
 
-import com.fukun.gateway.filter.AuthGatewayFilterFactory;
 import com.fukun.gateway.filter.AuthGlobalFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
