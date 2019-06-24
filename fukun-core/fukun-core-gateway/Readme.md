@@ -1339,6 +1339,11 @@ public class AuthFilterFactoryConfig {
 ``` 
 使用postman进行测试，分别访问http://localhost:9999/hello，http://localhost:9999/test等，请求头中放入token，
 值分别为1234、123等，进行测试查看相应的结果。  
+
+## Spring Cloud GateWay层面的全局异常处理
+分别添加JsonExceptionHandler类和ExceptionConfig配置类，具体配置请参考代码。    
+
+
  
  
 
