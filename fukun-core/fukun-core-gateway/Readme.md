@@ -1039,8 +1039,311 @@ AtomicInteger ac = new AtomicInteger();
    	at java.lang.Thread.run(Thread.java:748) [na:1.8.0_144]
 ```
 
+## 简单的执行身份的验证
+
+### 自定义过滤器
+
+可以继承 AbstractGatewayFilterFactory 或实现 GlobalFilter 实现过滤请求功能。  
+
+#### GatewayFilter  
+GatewayFilter 只能指定路径上应用    
+```
+package com.fukun.gateway.filter;
+
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.cloud.gateway.filter.GatewayFilter;
+import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
+import org.springframework.core.io.buffer.DataBuffer;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.server.reactive.ServerHttpResponse;
+import reactor.core.publisher.Mono;
+
+/**
+ * 身份认证的过滤器
+ * 可以继承 AbstractGatewayFilterFactory 或实现 GlobalFilter 实现过滤请求功能
+ * GatewayFilter 只能指定路径上应用，GlobalFilter 可以在全局应用
+ *
+ * @author tangyifei
+ * @since 2019年6月24日14:24:05
+ */
+@Slf4j
+public class AuthGatewayFilterFactory extends AbstractGatewayFilterFactory<AuthGatewayFilterFactory.Config> {
+
+    public AuthGatewayFilterFactory() {
+        super(Config.class);
+    }
+
+    /**
+     * 执行验证逻辑
+     *
+     * @param config
+     * @return
+     */
+    @Override
+    public GatewayFilter apply(Config config) {
+        return (exchange, chain) -> {
+            if (log.isInfoEnabled()) {
+                log.info("开始执行验证");
+            }
+            String token = exchange.getRequest().getHeaders().getFirst("token");
+            if (Config.secret.equals(token)) {
+                return chain.filter(exchange);
+            }
+            ServerHttpResponse response = exchange.getResponse();
+            response.setStatusCode(HttpStatus.UNAUTHORIZED);
+            //设置headers
+            HttpHeaders httpHeaders = response.getHeaders();
+            httpHeaders.add("Content-Type", "application/json; charset=UTF-8");
+            httpHeaders.add("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
+            //设置body
+            String warningStr = "未登录或登录超时";
+            DataBuffer bodyDataBuffer = response.bufferFactory().wrap(warningStr.getBytes());
+            return response.writeWith(Mono.just(bodyDataBuffer));
+        };
+    }
+
+    static class Config {
+        // TODO 操作人：唐一菲；  事由：优化后从redis中获取；时间：2019年6月24日14:26:51
+        /**
+         * 自定义一个服务端的token
+         */
+        static String secret = "1234";
+    }
+
+}
+```
+注入到spring容器中进行管理，如下：  
+```
+package com.fukun.gateway.config;
+
+import com.fukun.gateway.filter.AuthGatewayFilterFactory;
+import com.fukun.gateway.filter.AuthGlobalFilter;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+/**
+ * 自定义验证过滤器的配置类，注入AuthGatewayFilterFactory到spring容器中
+ *
+ * @author tangyifei
+ * @since 2019年6月24日14:38:45
+ */
+@Configuration
+public class AuthFilterFactoryConfig {
+
+    /**
+     * 创建自定义的局部验证过滤器工厂相关的bean
+     *
+     * @return 验证过滤器工厂相关的bean
+     */
+   @Bean
+   public AuthGatewayFilterFactory authGatewayFilterFactory() {
+        return new AuthGatewayFilterFactory(); 
+   }
+
+}
+```
+修改application.yml文件，如下：   
+  
+```
+spring:
+  cloud:
+     gateway:
+       # 是否与服务注册和服务发现组件进行结合，通过 serviceId 转发到具体的服务实例。默认为 false，设为 true 便开启通过服务中心的自动根据 serviceId 创建路由的功能。
+       discovery:
+         locator:
+           enabled: true
+       routes:
+             # 自定义的路由 ID，保持唯一
+             - id: method_route
+               #格式为：lb://应用注册服务名，针对多个服务，主要是服务中心中的服务，比如consul中的服务实例
+               uri: lb://consul-service-producer
+               filters:
+               # 输入过滤器类的名称前缀，必须匹配自定义的AuthGatewayFilterFactory这个类的前缀
+               - Auth
+               # 路由条件，Predicate 接受一个输入参数，返回一个布尔值结果。该接口包含多种默认方法来将 Predicate 组合成其他复杂的逻辑（比如：与，或，非）。
+               # predicate定义了一组匹配规则
+               predicates:
+               - Method=GET
+```
+ 上面只是针对method为get方法的url进行安全验证，只是局部的，全局的请使用GlobalFilter去实现。  
+ 然后使用PostMan进行测试，如下：   
+ 当在请求头中加入的token不是1234的时候，执行结果如下：  
+ 
+ ![服务网关](pictures/p8.png)   
+ 
+ 当在请求头中加入正确的token，执行结果如下：   
+ 
+  ![服务网关](pictures/p9.png) 
+  
+ #### GlobalFilter
+  我现在注释掉局部配置的过滤器，只要注释掉AuthGatewayFilterFactoryConfig类中局部过滤器相关的bean即可，
+  如下：  
+  ```
+  package com.fukun.gateway.config;
+  
+  import com.fukun.gateway.filter.AuthGatewayFilterFactory;
+  import com.fukun.gateway.filter.AuthGlobalFilter;
+  import org.springframework.context.annotation.Bean;
+  import org.springframework.context.annotation.Configuration;
+  
+  /**
+   * 自定义验证过滤器的配置类，注入AuthGatewayFilterFactory到spring容器中
+   *
+   * @author tangyifei
+   * @since 2019年6月24日14:38:45
+   */
+  @Configuration
+  public class AuthFilterFactoryConfig {
+  
+      /**
+       * 创建自定义的局部验证过滤器工厂相关的bean
+       *
+       * @return 验证过滤器工厂相关的bean
+       */
+  //    @Bean
+  //    public AuthGatewayFilterFactory authGatewayFilterFactory() {
+  //        return new AuthGatewayFilterFactory();
+  //    }
+  
+      /**
+       * 创建自定义的全局验证过滤器工厂相关的bean
+       *
+       * @return 验证过滤器工厂相关的bean
+       */
+      @Bean
+      public AuthGlobalFilter authGlobalFilter() {
+          return new AuthGlobalFilter();
+      }
+  }
+```
+然后修改application.yml文件的内容如下：  
+
+```
+spring:
+  cloud:
+     gateway:
+       # 是否与服务注册和服务发现组件进行结合，通过 serviceId 转发到具体的服务实例。默认为 false，设为 true 便开启通过服务中心的自动根据 serviceId 创建路由的功能。
+       discovery:
+         locator:
+           enabled: true
+       routes:
+             # 自定义的路由 ID，保持唯一
+             - id: method_route
+               #格式为：lb://应用注册服务名，针对多个服务，主要是服务中心中的服务，比如consul中的服务实例
+               uri: lb://consul-service-producer
+               filters:
+               # 输入过滤器类的名称前缀，必须匹配自定义的AuthGatewayFilterFactory这个类的前缀
+               # 配置全局时记得注释掉
+               #- Auth
+               # 路由条件，Predicate 接受一个输入参数，返回一个布尔值结果。该接口包含多种默认方法来将 Predicate 组合成其他复杂的逻辑（比如：与，或，非）。
+               # predicate定义了一组匹配规则
+               predicates:
+               - Path=/**
+```
+然后创建全局过滤器相关的类AuthGlobalFilter，如下：  
+
+```
+package com.fukun.gateway.filter;
+
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.cloud.gateway.filter.GatewayFilterChain;
+import org.springframework.cloud.gateway.filter.GlobalFilter;
+import org.springframework.core.Ordered;
+import org.springframework.core.io.buffer.DataBuffer;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.server.reactive.ServerHttpRequest;
+import org.springframework.http.server.reactive.ServerHttpResponse;
+import org.springframework.web.server.ServerWebExchange;
+import reactor.core.publisher.Mono;
+
+/**
+ * 全局身份验证过滤器
+ *
+ * @author tangyifei
+ * @since 2019年6月24日15:07:59
+ */
+@Slf4j
+public class AuthGlobalFilter implements GlobalFilter, Ordered {
+
+    @Override
+    public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+        if (log.isInfoEnabled()) {
+            log.info("开始执行验证");
+        }
+        ServerHttpRequest request = exchange.getRequest();
+        String sign = request.getHeaders().get("token").get(0);
+        // 从相关的缓存中获取
+        String token = "1234";
+        if (token.equals(sign)) {
+            return chain.filter(exchange);
+        }
+        ServerHttpResponse response = exchange.getResponse();
+        response.setStatusCode(HttpStatus.UNAUTHORIZED);
+        //设置headers
+        HttpHeaders httpHeaders = response.getHeaders();
+        httpHeaders.add("Content-Type", "application/json; charset=UTF-8");
+        httpHeaders.add("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
+        //设置body
+        String warningStr = "未登录或登录超时";
+        DataBuffer bodyDataBuffer = response.bufferFactory().wrap(warningStr.getBytes());
+        return response.writeWith(Mono.just(bodyDataBuffer));
+    }
+
+    @Override
+    public int getOrder() {
+        return 0;
+    }
+
+}
+```
+然后注入到spring容器中，修改AuthFilterFactoryConfig这个类增加全局过滤器相关的bean，如下： 
+``` 
+package com.fukun.gateway.config;
+
+import com.fukun.gateway.filter.AuthGatewayFilterFactory;
+import com.fukun.gateway.filter.AuthGlobalFilter;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+/**
+ * 自定义验证过滤器的配置类，注入AuthGatewayFilterFactory到spring容器中
+ *
+ * @author tangyifei
+ * @since 2019年6月24日14:38:45
+ */
+@Configuration
+public class AuthFilterFactoryConfig {
+
+    /**
+     * 创建自定义的局部验证过滤器工厂相关的bean
+     *
+     * @return 验证过滤器工厂相关的bean
+     */
+//    @Bean
+//    public AuthGatewayFilterFactory authGatewayFilterFactory() {
+//        return new AuthGatewayFilterFactory();
+//    }
+
+    /**
+     * 创建自定义的全局验证过滤器工厂相关的bean
+     *
+     * @return 验证过滤器工厂相关的bean
+     */
+    @Bean
+    public AuthGlobalFilter authGlobalFilter() {
+        return new AuthGlobalFilter();
+    }
+}
+``` 
+使用postman进行测试，分别访问http://localhost:9999/hello，http://localhost:9999/test等，请求头中放入token，
+值分别为1234、123等，进行测试查看相应的结果。  
+ 
+ 
 
 
+ 
 
  
 

@@ -25,7 +25,7 @@ spring:
            enabled: true
        routes:
              # 自定义的路由 ID，保持唯一
-             - id: add_request_parameter_route
+             - id: method_route
                # 目标服务地址，针对单个服务
                #uri: http://localhost:8501
                #格式为：lb://应用注册服务名，针对多个服务，主要是服务中心中的服务，比如consul中的服务实例
@@ -35,6 +35,8 @@ spring:
                #- AddRequestParameter=foo, bar
                #当请求/tang/yi/fei/hello后端匹配到的请求路径就会变成http://IP:PORT/hello。
                #- StripPrefix=3
+               # 输入过滤器类的名称前缀，必须匹配自定义的AuthGatewayFilterFactory这个类的前缀
+               #- Auth
                #filter 名称必须是 RequestRateLimiter
                - name: RequestRateLimiter
                  args:
@@ -70,8 +72,8 @@ spring:
                # predicate定义了一组匹配规则
                predicates:
                # 当访问地址 http://localhost:9999/foo时会自动转发到地址：http://localhost:8501/foo
-               #- Path=/tang/**
-               - Method=GET
+               - Path=/**
+               #- Method=GET
   redis:
     # redis的数据库索引，默认为0
     database: 0

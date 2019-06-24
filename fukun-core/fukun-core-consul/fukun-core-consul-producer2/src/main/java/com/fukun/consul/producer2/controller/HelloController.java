@@ -2,10 +2,7 @@ package com.fukun.consul.producer2.controller;
 
 import com.fukun.producer.api.HelloService;
 import org.apache.commons.lang.StringUtils;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -55,5 +52,10 @@ public class HelloController implements HelloService {
             throw new RuntimeException("error");
         }
         return "retry2";
+    }
+
+    @PostMapping("/test")
+    public String test() {
+        return "test2";
     }
 }
