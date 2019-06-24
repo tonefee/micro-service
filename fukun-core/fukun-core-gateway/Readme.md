@@ -1341,7 +1341,8 @@ public class AuthFilterFactoryConfig {
 值分别为1234、123等，进行测试查看相应的结果。  
 
 ## Spring Cloud GateWay层面的全局异常处理
-分别添加JsonExceptionHandler类和ExceptionConfig配置类，具体配置请参考代码。    
+那么gateway代理的后台服务，如果出现了异常没有处理，网关也是会直接原文返回给客户端的，那么怎么避免这种情况的发生呢？  
+我们分别添加JsonExceptionHandler类和ExceptionConfig配置类，具体配置请参考代码。    
 
 
  
