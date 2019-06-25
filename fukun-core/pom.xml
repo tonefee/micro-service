@@ -15,6 +15,7 @@
         <module>fukun-core-consul</module>
         <module>fukun-core-zuul</module>
         <module>fukun-core-gateway</module>
+        <module>fukun-core-config</module>
     </modules>
 
 </project>
