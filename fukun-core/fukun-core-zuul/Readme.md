@@ -102,7 +102,77 @@ zuul:
 zuul.routes.api-c.path=/api-c/**
 zuul.routes.api-c.url=forward:/api-c
 ```
-以上配置使用了本地跳转,当 url 符合 /api-c/** 规则时,会被网关转发到 自己本身 服务的对应接口.  
+以上配置使用了本地跳转,当 url 符合 /api-c/** 规则时,会被网关转发到 自己本身 服务的对应接口.    
+
+# 路由熔断
+路由熔断只需要实现FallbackProvider接口即可，实现里面的getRoute()方法和fallbackResponse()方法，
+具体代码逻辑请查看CustomZuulFilter类中的相关代码，这里就不展示了。  
+
+注意：Zuul 目前只支持服务级别的熔断，不支持具体到某个URL进行熔断。  
+
+# 路由重试
+有时候因为网络或者其它原因，服务可能会暂时的不可用，这个时候我们希望可以再次对服务进行重试，Zuul也帮我们实现了此功能，
+需要结合Spring Retry 一起来实现。下面我们以上面的项目为例做演示。  
+添加Spring Retry依赖  
+首先在fukun-core-zuul-server项目中添加Spring Retry依赖。  
+开启Zuul Retry  
+再配置文件中配置启用Zuul Retry  
+
+```
+#是否开启重试功能
+zuul.retryable=true
+#对当前服务的重试次数
+ribbon.MaxAutoRetries=2
+#切换相同Server的次数
+ribbon.MaxAutoRetriesNextServer=0
+```
+这样我们就开启了Zuul的重试功能。  
+然后在fukun-core-consul-producer1的控制器中加入如下的代码：  
+
+```
+ @GetMapping("/zuul/retry")
+    public String zuul() {
+        System.out.println("重试次数：" + ac.addAndGet(1));
+        try {
+            Thread.sleep(1000000);
+        } catch (Exception e) {
+            System.err.println("失败");
+        }
+        return "zuul-retry";
+    }
+```
+分别开启fukun-core-consul-producer1和fukun-core-zuul-server，然后访问http://localhost:8888/consul-service-producer/zuul/retry?token=1，
+这个时候看一下fukun-core-consul-producer1的控制台，如下：   
+
+![服务网关](pictures/p6.png)   
+
+然后看一下浏览器，如下：  
+
+![服务网关](pictures/p7.png)   
+
+说明进行了三次请求，也就是进行了两次的重试。这样也就验证了我们的配置信息，完成了Zuul的重试功能。    
+
+注意：  
+
+开启重试在某些情况下是有问题的，比如当压力过大，一个实例停止响应时，路由将流量转到另一个实例，很有可能导致最终所有的实例全被压垮。
+说到底，断路器的其中一个作用就是防止故障或者压力扩散。用了retry，断路器就只有在该服务的所有实例都无法运作的情况下才能起作用。
+这种时候，断路器的形式更像是提供一种友好的错误信息，或者假装服务正常运行的假象给使用者。
+
+不用retry，仅使用负载均衡和熔断，就必须考虑到是否能够接受单个服务实例关闭和eureka刷新服务列表之间带来的短时间的熔断。
+如果可以接受，就无需使用retry。  
+
+# zuul的高可用
+为了保证Zuul的高可用性，前端可以同时启动多个Zuul实例进行负载，在Zuul的前端使用Nginx或者F5进行负载转发以达到高可用性。   
+
+ ![服务网关](pictures/p8.png)  
+
+
+
+
+
+
+
+
 
 
 

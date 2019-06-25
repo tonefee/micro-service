@@ -20,6 +20,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
+ * 自定义过滤器，需要继承ZuulFilter的类，并覆盖其中的4个方法
+ * 比如：我们可以定制一种STATIC类型的过滤器，直接在Zuul中生成响应，
+ * 而不将请求转发到后端的微服务。
  * 网关过滤器，对请求进行拦截与过滤
  *
  * @author tangyifei
@@ -28,9 +31,10 @@ import java.util.Map;
  */
 @Slf4j
 @Component
-public class MyGatewayFilter extends ZuulFilter implements FallbackProvider {
+public class CustomZuulFilter extends ZuulFilter implements FallbackProvider {
 
     /**
+     * 熔断拦截哪个服务，告诉Zuul它是负责哪个route定义的熔断。
      * 当我们的某一个服务崩溃时，网关要负责进行回调
      * ServiceId，如果需要所有调用都支持回退，则 return "*" 或 return null，
      * 单个支持回调只需要加入application.name 例如 return "consul-service-producer"
@@ -43,7 +47,10 @@ public class MyGatewayFilter extends ZuulFilter implements FallbackProvider {
     }
 
     /**
+     * 定制返回内容
+     * 而fallbackResponse方法则是告诉 Zuul 断路出现时，它会提供一个什么返回值来处理请求。
      * 如果请求服务失败，则返回指定的信息给调用者
+     * 注意：Zuul 目前只支持服务级别的熔断，不支持具体到某个URL进行熔断。
      *
      * @param route 路由
      * @param cause 异常
@@ -53,6 +60,23 @@ public class MyGatewayFilter extends ZuulFilter implements FallbackProvider {
     @SneakyThrows
     public ClientHttpResponse fallbackResponse(String route, Throwable cause) {
 
+        // 当服务出现异常时，打印异常信息，用于定位错误，并返回”The service is unavailable.”。
+        // 分别开启fukun-core-consul-producer1和fukun-core-consul-producer2，使用zuul访问时，
+        // 关闭某一台服务，比如fukun-core-consul-producer2，
+        // 这时会交替出现hello consul1和The service is unavailable.
+        // 这就说明已经启用了熔断机制
+        if (cause != null && cause.getCause() != null) {
+            String reason = cause.getCause().getMessage();
+            if (log.isInfoEnabled()) {
+                log.info("Exception {}", reason);
+            }
+        }
+
+        /**
+         * 当我们的后端服务出现异常的时候，我们不希望将异常抛出给最外层，
+         * 我们不希望将异常抛出给最外层，期望服务可以自动进行一降级。
+         * Zuul给我们提供了这样的支持。当某个服务出现异常时，直接返回我们预设的信息。
+         */
         return new ClientHttpResponse() {
 
             /**
@@ -103,10 +127,10 @@ public class MyGatewayFilter extends ZuulFilter implements FallbackProvider {
 
     /**
      * 4种过滤器类型,
-     * 　　pre；可以在请求被路由之前调用,
-     * 　　route：在路由请求时候被调用,
-     * 　　post：在route和error过滤器之后被调用,
-     * 　　error：处理请求时发生错误时被调用
+     * 　　pre；可以在请求被路由之前调用，可利用这种过滤器实现身份验证、在集群中选择请求的微服务、记录调试信息等。
+     * 　　routing：在路由请求时候被调用，这种过滤器将请求路由到微服务。这种过滤器用于构建发送给微服务的请求，并使用Apache HttpClient或Netfilx Ribbon请求微服务。
+     * 　　post：在route和error过滤器之后被调用，这种过滤器在路由到微服务以后执行。这种过滤器可用来为响应添加标准的HTTP Header、收集统计信息和指标、将响应从微服务发送给客户端等。
+     * 　　error：处理请求时发生错误时被调用，在其他阶段发生错误时执行该过滤器。
      *
      * @return 过滤器类型
      */
@@ -116,7 +140,7 @@ public class MyGatewayFilter extends ZuulFilter implements FallbackProvider {
     }
 
     /**
-     * 优先级为0，数字越大，优先级越低
+     * 优先级为0，数字越大，优先级越低，越后执行
      *
      * @return 优先级
      */
@@ -126,7 +150,7 @@ public class MyGatewayFilter extends ZuulFilter implements FallbackProvider {
     }
 
     /**
-     * 是否执行该过滤器，此处为true，说明需要过滤
+     * 是否执行该过滤器，此处为true，说明需要过滤并执行，为false，表示不执行
      *
      * @return 是否应当过滤
      */
@@ -136,7 +160,8 @@ public class MyGatewayFilter extends ZuulFilter implements FallbackProvider {
     }
 
     /**
-     * 过滤相关的业务代码
+     * 过滤相关的业务代码，filter需要执行的具体操作
+     * 在实际使用中我们可以结合shiro、oauth2.0等技术去做鉴权、验证。
      *
      * @return 过滤后的响应
      */
