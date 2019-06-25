@@ -8,6 +8,8 @@ import org.springframework.cloud.gateway.route.builder.RouteLocatorBuilder;
 import org.springframework.context.annotation.Bean;
 
 /**
+ * GateWay网关服务
+ *
  * @author tangyifei
  * @since 2019-6-11 17:34:01
  * @since jdk1.8
