@@ -11,6 +11,33 @@ Use of Simple Micro Services
 此项目使用spring-boot的2.0.5.RELEASE版本，单表crud通用mapper，实现了全局异常处理，登录验证、统一响应返回码、  
 动态为数据库中的某张表添加扩展字段等功能，详情请查看相关模块的源代码。
 
+# Dubbo和Spring Cloud有何不同
+国内技术人喜欢拿 Dubbo 和 Spring Cloud 进行对比，是因为两者都是服务治理非常优秀的开源框架。   
+但它们两者的出发点是不一样的，Dubbo 关注于服务治理这块并且以后也会继续往这个方向去发展。
+Spring Cloud 关注的是微服务治理的生态。 因为微服务治理的方方面面都是它所关注的内容，
+服务治理也只是微服务生态的一部分而已。因此可以大胆的断定，
+Dubbo 未来会在服务治理方面更为出色，而 Spring Cloud 在微服务治理上面无人能敌。  
+## 如何选择两个服务框架
+可能很多人正在犹豫，在服务治理的时候应该选择那个框架呢？如果公司对效率有极高的要求建议使用 Dubbo，
+相对比 RPC 的效率会比 HTTP 高很多；如果团队不想对技术架构做大的改造建议使用 Dubbo，
+Dubbo 仅仅需要少量的修改就可以融入到内部系统的架构中。但如果技术团队喜欢挑战新技术，
+建议选择 Spring Cloud，Spring Cloud 架构体系有有趣很酷的技术。如果公司选择微服务架构去重构整个技术体系，
+那么 Spring Cloud 是当仁不让之选，它可以说是目前最好的微服务框架没有之一。   
+ 
+![微服务](pictures/p2.png)   
+从上图可以看出其实Dubbo的功能只是Spring Cloud体系的一部分。  
+这样对比是不够公平的，首先 Dubbo 是 SOA 时代的产物，它的关注点主要在于服务的调用，流量分发、流量监控和熔断。
+而 Spring Cloud 诞生于微服务架构时代，考虑的是微服务治理的方方面面，另外由于依托了 Spring、Spring Boot 的优势之上，
+两个框架在开始目标就不一致，Dubbo 定位服务治理、Spring Cloud 是一个生态。    
+如果仅仅关注于服务治理的这个层面，Dubbo其实还优于Spring Cloud很多：  
+Dubbo 支持更多的协议，如：rmi、hessian、http、webservice、thrift、memcached、redis 等。  
+Dubbo 使用 RPC 协议效率更高，在极端压力测试下，Dubbo 的效率会高于 Spring Cloud 效率一倍多。  
+Dubbo 有更强大的后台管理，Dubbo 提供的后台管理 Dubbo Admin 功能强大，提供了路由规则、动态配置、
+访问控制、权重调节、均衡负载等诸多强大的功能。  
+可以限制某个 IP 流量的访问权限，设置不同服务器分发不同的流量权重，并且支持多种算法，
+利用这些功能我们可以在线上做灰度发布、故障转移等，Spring Cloud 到现在还不支持灰度发布、流量权重等功能。  
+所以Dubbo专注于服务治理；Spring Cloud关注于微服务架构生态。  
+
 # project items build order
 fukun-parent <br/>
 fukun-commons 注意构建fukun-commons时，注释掉pom.xml中的modules标签中的配置再次进行构建<br/>
