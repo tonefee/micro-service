@@ -28,9 +28,22 @@ spring:
             # git仓库的账号
             username: 15062230055@163.com
             # git仓库的密码
-            password:
+            password: 726267tyf
+  rabbitmq:
+      host: 115.159.201.120
+      port: 5672
+      username: guest
+      password: guest
+
 server:
  port: 8889
+
+management:
+   endpoints:
+      web:
+        exposure:
+             include: '*'
+
 
 
 

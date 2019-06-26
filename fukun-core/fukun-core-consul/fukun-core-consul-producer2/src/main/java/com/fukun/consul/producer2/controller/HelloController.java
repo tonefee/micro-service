@@ -2,6 +2,8 @@ package com.fukun.consul.producer2.controller;
 
 import com.fukun.producer.api.HelloService;
 import org.apache.commons.lang.StringUtils;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.concurrent.atomic.AtomicInteger;
@@ -14,6 +16,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @since JDK1.8
  */
 @RestController
+@RefreshScope
 public class HelloController implements HelloService {
 
     AtomicInteger ac = new AtomicInteger();
@@ -57,5 +60,13 @@ public class HelloController implements HelloService {
     @PostMapping("/test")
     public String test() {
         return "test2";
+    }
+
+    @Value("${neo.hello}")
+    private String hello;
+
+    @RequestMapping("/config")
+    public String getConfigDetail() {
+        return this.hello;
     }
 }

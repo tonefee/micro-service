@@ -446,7 +446,1171 @@ spring.cloud.config.discovery.serviceId ：指定server端的name,也就是serve
 
 再次访问：http://localhost:8501/config，返回：hello tangyifei09。说明客户端已经读取到了server端的内容，
 我们随机停掉一台server端的服务，再次访问http://localhost:8501/config，
-返回：hello tangyifei09，说明达到了高可用的目的。   
+返回：hello tangyifei09，说明达到了高可用的目的。 
+
+## Spring Cloud Bus 的使用
+如果需要客户端获取到最新的配置信息需要执行refresh，我们可以利用webhook的机制每次提交代码发送请求来刷新客户端，
+当客户端越来越多的时候，需要每个客户端都执行一遍，这种方案就不太适合了。使用Spring Cloud Bus可以完美解决这一问题。  
+
+Spring Cloud Bus 通过轻量消息代理连接各个分布的节点。这会用在广播状态的变化（例如配置变化）或者其他的消息指令。  
+Spring Bus 的一个核心思想是通过分布式的启动器对spring boot应用进行扩展，也可以用来建立一个多个应用之间的通信频道。
+目前唯一实现的方式是用AMQP消息代理作为通道，同样特性的设置（有些取决于通道的设置）在更多通道的文档中。  
+Spring Cloud Bus 被国内很多都翻译为消息总线，也挺形象的。大家可以将它理解为管理和传播所有分布式项目中的消息既可，
+`其实本质是利用了MQ的广播机制在分布式的系统中传播消息，`利用 Bus 的机制可以做很多的事情，其中配置中心客户端刷新配置
+就是典型的应用场景之一，我们用一张图来描述bus在配置中心使用的机制。  
+
+![服务发现](pictures/p8.png)   
+
+根据此图我们可以看出利用Spring Cloud Bus做配置更新的步骤:  
+
+1、提交代码触发post给客户端A发送bus/refresh  
+2、客户端A接收到请求从Server端更新配置并且发送给Spring Cloud Bus  
+3、Spring Cloud bus接到消息并通知给其它客户端  
+4、其它客户端接收到通知，请求Server端获取最新配置  
+5、全部客户端均获取到最新的配置  
+
+MQ我们使用RabbitMQ来做示例。  
+
+### 添加依赖
+
+客户端项目fukun-core-consul-producer1增加如下的依赖  
+
+```
+<dependency>
+    <groupId>org.springframework.cloud</groupId>
+    <artifactId>spring-cloud-starter-bus-amqp</artifactId>
+</dependency>
+```
+需要多引入spring-cloud-starter-bus-amqp包，增加对消息总线的支持  
+
+### 配置文件
+配置文件需要增加RabbitMq的相关配置，这样客户端代码就改造完成了。  
+注意下面的配置加入到bootstrap.properties。  
+
+```
+#启用所有的监控端点，默认情况下，这些端点是禁用的，上面的值暴露health端点
+management.endpoints.web.exposure.include=*
+## 开启消息跟踪
+spring.cloud.bus.trace.enabled=true
+# 增加rabbitmq的配置
+spring.rabbitmq.host=115.159.201.120
+spring.rabbitmq.port=5672
+spring.rabbitmq.username=guest
+spring.rabbitmq.password=guest
+```
+### 测试
+依次启动fukun-core-config-server、fukun-core-consul-producer1项目，
+在启动fukun-core-consul-producer1项目的时候我们会发现启动日志会输出这样的一条记录。  
+
+![服务发现](pictures/p9.png)   
+
+说明客户端已经具备了消息总线通知的能力了，为了更好的模拟消息总线的效果，再次启动一个客户端
+fukun-core-consul-producer2，相关的配置信息跟fukun-core-consul-producer2是一样的。查看consul
+的监控中心如下：  
+
+![服务发现](pictures/p10.png) 
+
+说明fukun-core-consul-producer1和fukun-core-consul-producer2已经启动成功。  
+首先测试一下fukun-core-consul-producer1和fukun-core-consul-producer2是否能正常读取到配种中心的
+服务端的配置信息。分别访问http://localhost:8501/config 和 http://localhost:8503/config，如果返回
+hello tangyifei09说明配置中心server端、fukun-core-consul-producer1和fukun-core-consul-producer2都正常读取到了配置信息。  
+现在我们更新tang-config-dev.properties 中neo.hello的值为tangyifei07并提交到代码库中，
+访问：http://localhost:8501/config 依然返回hello tangyifei09，
+我们对端口为8501的客户端发送一个curl -X POST http://localhost:8501/actuator/bus-refresh的post请求。
+在win下使用下面命令来模拟webhook。注意spring-boot1.X版本使用curl -X POST http://localhost:8501/bus/refresh，
+如下：  
+
+![服务发现](pictures/p11.png) 
+
+执行完成后，依次访问：http://localhost:8501/config、http://localhost:8503/config，
+返回：hello tangyifei07。说明两个客户端均已经拿到了最新配置文件的信息。
+
+### 改进
+在上面的流程中，我们已经达到了利用消息总线触发一个客户端/actuator/bus-refresh,
+进而刷新所有客户端的配置的目的。但这种方式并不优雅。原因如下：  
+1、打破了微服务的职责单一性。微服务本身是业务模块，它本不应该承担配置刷新的职责。  
+2、破坏了微服务各节点的对等性。 
+3、有一定的局限性。例如，微服务在迁移时，它的网络地址常常会发生变化，此时如果想要做到自动刷新，那就不得不修改WebHook的配置。  
+
+因此我们将上面的架构模式稍微改变一下  
+ 
+![服务发现](pictures/p12.png)   
+
+这时Spring Cloud Bus做配置更新步骤如下:  
+1、提交代码触发post请求给/actuator/bus-refresh    
+2、配置中心server端接收到请求并发送给Spring Cloud Bus    
+3、Spring Cloud bus接到消息并通知给其它客户端    
+4、其它客户端接收到通知，请求配置中心Server端获取最新配置    
+5、全部客户端均获取到最新的配置    
+
+这样的话我们在配置中心server端的fukun-core-config-server代码做一些改动，
+来支持/actuator/bus-refresh  
+#### 添加依赖
+```
+ <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-bus-amqp</artifactId>
+  </dependency>
+```
+需要多引入spring-cloud-starter-bus-amqp包，增加对消息总线的支持    
+
+#### 修改配置
+配置文件增加RebbitMq的相关配置，关闭安全验证。这样server端代码就改造完成了。 
+
+``` 
+spring:
+  application:
+     name: fukun-core-config-server
+  cloud:
+     consul:
+        host: localhost
+        port: 8500
+        discovery:
+          enabled: true
+          register: true
+          tags: config-server
+          serviceName: ${spring.application.name}
+          hostname: ${spring.application.name}
+          port: ${server.port}
+          instanceId: ${spring.application.name}:${server.port}
+          preferIpAddress: true
+          healthCheckInterval: 10s
+          healthCheckUrl: http://${spring.cloud.client.ip-address}:${server.port}/health
+          heartbeat:
+             enabled: true
+     config:
+        server:
+          git:
+             # 配置git仓库的地址
+            uri: https://gitee.com/tangyifei/micro-service-architecture.git
+            # git仓库地址下的相对地址，可以配置多个，用,分割。
+            search-paths: config-repo
+            # git仓库的账号
+            username: 15062230055@163.com
+            # git仓库的密码
+            password: 726267tyf
+  rabbitmq:
+      host: 115.159.201.120
+      port: 5672
+      username: guest
+      password: guest
+
+server:
+ port: 8889
+
+management:
+   endpoints:
+      web:
+        exposure:
+             include: '*'
+
+```
+依次启动fukun-core-config-server、fukun-core-consul-producer1、fukun-core-consul-producer2服务，
+需要检测一下这三个项目能不能读到配置中心中的配置信息。
+同样修改tang-config-dev.properties 中neo.hello的值为hello tangyifei03并提交到代码库中。
+在win下使用下面命令来模拟 WebHook 触发配置中心server端/actuator/bus-refresh 。  
+
+curl -X POST http://localhost:8889/actuator/bus-refresh  
+
+执行完成后，依次访问：http://localhost:8501/config、http://localhost:8503/config，返回：hello tangyifei03。
+说明三个客户端均已经拿到了最新配置文件的信息。      
+
+### 局部刷新
+某些场景下（例如灰度发布），我们可能只想刷新部分微服务的配置，此时可通过/bus/refresh端点的destination参数来定位要刷新的应用程序。  
+例如：/actuator/bus-refresh?destination=consul-service-producer:8501，这样消息总线上的微服务实例就会根据destination参数的值来判断是否需要要刷新。
+其中，consul-service-producer:8501指的是各个微服务的实例 ID。
+destination参数也可以用来定位特定的微服务。例如：/actuator/bus-refresh?destination=consul-service-producer:**，
+这样就可以触发customers微服务所有实例的配置刷新。    
+
+### 跟踪总线事件
+一些场景下，我们可能希望知道Spring Cloud Bus事件传播的细节。此时，我们可以跟踪总线事件（RemoteApplicationEvent的子类都是总线事件）。  
+跟踪总线事件非常简单，只需设置spring.cloud.bus.trace.enabled=true，这样在/actuator/bus-refresh端点被请求后，访问/actuator/httptrace 端点就可获得类似如下的结果：  
+```
+{
+	"traces": [{
+				"timestamp": "2019-06-26T08:21:29.987Z",
+				"principal": null,
+				"session": null,
+				"request": {
+					"method": "GET",
+					"uri": "http://localhost:8503/act
+					uator / bus - trace ","
+					headers ":{"
+					host ":["
+					localhost: 8503 "],"
+					accept ":[" *
+					/*"],"user-agent":["curl/7.55.1"]},"remoteAddress":null},"response":{"statu
+					s":404,"headers":{}},"timeTaken":2},{"timestamp":"2019-06-26T08:15:44.090Z","principal":null,"session":null,"request":{"method":"GET","uri":"
+					http://localhost:8503/actuator/trace","headers":{"host":["localhost:8503"],"accept":["*/
+					* "],"
+					user - agent ":["
+					curl / 7.55 .1 "]},"
+					remoteAddress ":nul
+					l
+				},
+				"response": {
+					"status": 404,
+					"headers": {}
+				},
+				"timeTaken": 2
+			}, {
+				"timestamp": "2019-06-26T08:14:38.648Z",
+				"principal": null,
+				"session": null,
+				"request": {
+					"
+					method ":"
+					GET ","
+					uri ":"
+					http: //localhost:8503/trace","headers":{"host":["localhost:8503"],"accept":["*/*"],"user-agent":["curl/7.55.1"]},"remote
+						Address ":null},"
+					response ":{"
+					status ":404,"
+					headers ":{}},"
+					timeTaken ":5},{"
+					timestamp ":"
+					2019 - 06 - 26 T08: 14: 36.186 Z ","
+					principal ":null,"
+					session ":null,
+					"request": {
+						"method": "GET",
+						"uri": "http://localhost:8503/trace",
+						"headers": {
+							"accept-language": ["zh-CN"],
+							"host": ["localhost:8503"],
+							"connection": [
+								"Keep-Alive"
+							],
+							"accept-encoding": ["gzip, deflate"],
+							"user-agent": ["Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko"],
+							"acc
+							ept ":["
+							text / html,
+							application / xhtml + xml,
+							image / jxr,
+							*
+							/*"]},"remoteAddress":null},"response":{"status":404,"headers":{}},"timeTaken":5},{"time
+							stamp":"2019-06-26T08:14:35.822Z","principal":null,"session":null,"request":{"method":"GET","uri":"http://localhost:8503/trace","headers":{"a
+							ccept-language":["zh-CN"],"host":["localhost:8503"],"connection":["Keep-Alive"],"accept-encoding":["gzip, deflate"],"user-agent":["Mozilla/5.
+							0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko"],"accept":["text/html, application/xhtml+xml, image/jxr, */
+							* "]},"
+							remoteAddress ":
+							null
+						},
+						"response": {
+							"status": 404,
+							"headers": {}
+						},
+						"timeTaken": 4
+					},
+					{
+						"timestamp": "2019-06-26T07:59:47.752Z",
+						"principal": null,
+						"session": null,
+						"request": {
+							"method": "GET",
+							"uri": "http://localhost:8503/trace",
+							"headers": {
+								"host": ["localhost:8503"],
+								"accept": ["*/*"],
+								"user-agent": ["curl/7.55.1"]
+							},
+							"rem
+							oteAddress ":null},"
+							response ":{"
+							status ":404,"
+							headers ":{}},"
+							timeTaken ":3},{"
+							timestamp ":"
+							2019 - 06 - 26 T07: 59: 39.805 Z ","
+							principal ":null,"
+							session ":nu
+							ll,
+							"request": {
+								"method": "GET",
+								"uri": "http://localhost:8503/actuator/trace",
+								"headers": {
+									"host": ["localhost:8503"],
+									"accept": ["*/*"],
+									"user-agent": ["curl/7.55.1"]
+								},
+								"remoteAddress": null
+							},
+							"response": {
+								"status": 404,
+								"headers": {}
+							},
+							"timeTaken": 2
+						},
+						{
+							"timestamp": "2019-06-26T07:50:53.889Z",
+							"princip
+							al ":null,"
+							session ":null,"
+							request ":{"
+							method ":"
+							GET ","
+							uri ":"
+							http: //localhost:8503/favicon.ico","headers":{"referer":["http://localhost:8503/conf
+								ig "],"
+							cookie ":["
+							UM_distinctid = 16 b69d37206423 - 060395 fcec2fee - 6353160 - 100200 - 16 b69d372072fb;CNZZDATA1260945749 = 1286020430 - 1560845070 - % 7 C156084
+							5070 "],"
+							accept - language ":["
+							zh - CN,
+							zh;q = 0.9 "],"
+							host ":["
+							localhost: 8503 "],"
+							connection ":["
+							keep - alive "],"
+							cache - control ":["
+							no - cache "],"
+							accept - encodi
+							ng ":["
+							gzip,
+							deflate,
+							br "],"
+							pragma ":["
+							no - cache "],"
+							accept ":["
+							image / webp,
+							image / apng,
+							image /*,*/ * ;q = 0.8 "],"
+							user - agent ":["
+							Mozilla / 5.0(Windows NT 1 0.0; Win64; x64) AppleWebKit / 537.36(KHTML, like Gecko) Chrome / 74.0 .3729 .131 Safari / 537.36 "]},"
+							remoteAddress ":null},"
+							response ":{"
+							status ":200,
+							"headers": {
+								"Accept-Ranges": ["bytes"],
+								"Last-Modified": ["Tue, 28 May 2019 09:45:27 GMT"],
+								"Content-Length": ["946"],
+								"Date": ["Wed, 26 Jun 2019 07:
+									50: 53 GMT "],"
+									Content - Type ":["
+									image / x - icon "]}},"
+									timeTaken ":2},{"
+									timestamp ":"
+									2019 - 06 - 26 T07: 50: 53.818 Z ","
+									principal ":null,"
+									session ":null,"
+									request ":{"
+									method ":"
+									GET ","
+									uri ":"
+									http: //localhost:8503/config","headers":{"cookie":["UM_distinctid=16b69d37206423-060395fcec2fee-6353160-100200-16b69
+									d372072fb;CNZZDATA1260945749 = 1286020430 - 1560845070 - % 7 C1560845070 "],"
+									accept - language ":["
+									zh - CN, zh;q = 0.9 "],"
+									upgrade - insecure - requests ":["
+									1 "],"
+									h
+									ost ":["
+									localhost: 8503 "],"
+									connection ":["
+									keep - alive "],"
+									cache - control ":["
+									max - age = 0 "],"
+									accept - encoding ":["
+									gzip, deflate, br "],"
+									accept ":["
+									text / htm
+									l, application / xhtml + xml, application / xml;q = 0.9, image / webp, image / apng, *
+									/*;q=0.8,application/signed-exchange;v=b3"],"user-agent":["Mozilla/5.0 (
+									Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.131 Safari/537.36"]},"remoteAddress":null},"response":{"
+									status":200,"headers":{"Content-Length":["17"],"Date":["Wed, 26 Jun 2019 07:50:53 GMT"],"Content-Type":["text/html;charset=UTF-8"]}},"timeTak
+									en":6},{"timestamp":"2019-06-26T07:50:53.736Z","principal":null,"session":null,"request":{"method":"GET","uri":"http://localhost:8503/favicon
+									.ico","headers":{"referer":["http://localhost:8503/config"],"cookie":["UM_distinctid=16b69d37206423-060395fcec2fee-6353160-100200-16b69d37207
+									2fb; CNZZDATA1260945749=1286020430-1560845070-%7C1560845070"],"accept-language":["zh-CN,zh;q=0.9"],"host":["localhost:8503"],"connection":["k
+									eep-alive"],"cache-control":["no-cache"],"accept-encoding":["gzip, deflate, br"],"pragma":["no-cache"],"accept":["image/webp,image/apng,image
+									/*,*/
+									* ;q = 0.8 "],"
+									user - agent ":["
+									Mozilla / 5.0(Windows NT 10.0; Win64; x64) AppleWebKit / 537.36(KHTML, like Gecko) Chrome / 74.0 .3729 .131 Safari / 53
+									7.36 "]},"
+									remoteAddress ":null},"
+									response ":{"
+									status ":200,"
+									headers ":{"
+									Accept - Ranges ":["
+									bytes "],"
+									Last - Modified ":["
+									Tue, 28 May 2019 09: 45: 27 GMT "], "Content-Length": ["946"], "Date": ["Wed, 26 Jun 2019 07:50:53 GMT"], "Content-Type": ["image/x-icon"]
+								}
+							},
+							"timeTaken": 6
+						},
+						{
+							"timestamp": "2019-06-26T
+							07: 50: 53.656 Z ","
+							principal ":null,"
+							session ":null,"
+							request ":{"
+							method ":"
+							GET ","
+							uri ":"
+							http: //localhost:8503/config","headers":{"cookie":["UM_distin
+								ctid = 16 b69d37206423 - 060395 fcec2fee - 6353160 - 100200 - 16 b69d372072fb;CNZZDATA1260945749 = 1286020430 - 1560845070 - % 7 C1560845070 "],"
+							accept - language ": ["zh-CN,zh;q=0.9"],
+							"upgrade-insecure-requests": ["1"],
+							"host": ["localhost:8503"],
+							"connection": ["keep-alive"],
+							"cache-control": ["max-age=0"],
+							"acc
+							ept - encoding ":["
+							gzip,
+							deflate,
+							br "],"
+							accept ":["
+							text / html,
+							application / xhtml + xml,
+							application / xml;q = 0.9,
+							image / webp,
+							image / apng,
+							*
+							/*;q=0.8,applicat
+							ion/signed-exchange;v=b3"],"user-agent":["Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.1
+							31 Safari/537.36"]},"remoteAddress":null},"response":{"status":200,"headers":{"Content-Length":["17"],"Date":["Wed, 26 Jun 2019 07:50:53 GMT"
+							],"Content-Type":["text/html;charset=UTF-8"]}},"timeTaken":3},{"timestamp":"2019-06-26T07:50:50.747Z","principal":null,"session":null,"reques
+							t":{"method":"GET","uri":"http://localhost:8503/favicon.ico","headers":{"referer":["http://localhost:8503/config"],"cookie":["UM_distinctid=1
+							6b69d37206423-060395fcec2fee-6353160-100200-16b69d372072fb; CNZZDATA1260945749=1286020430-1560845070-%7C1560845070"],"accept-language":["zh-C
+							N,zh;q=0.9"],"host":["localhost:8503"],"connection":["keep-alive"],"cache-control":["no-cache"],"accept-encoding":["gzip, deflate, br"],"prag
+							ma":["no-cache"],"accept":["image/webp,image/apng,image/*,*/
+							* ;q = 0.8 "],"
+							user - agent ":["
+							Mozilla / 5.0(Windows NT 10.0; Win64; x64) AppleWebKit / 53
+							7.36(KHTML, like Gecko) Chrome / 74.0 .3729 .131 Safari / 537.36 "]},"
+							remoteAddress ":null},"
+							response ":{"
+							status ":200,"
+							headers ":{"
+							Accept - Ranges ":["
+							by
+							tes "],"
+							Last - Modified ":["
+							Tue,
+							28 May 2019 09: 45: 27 GMT "],"
+							Content - Length ":["
+							946 "],"
+							Date ":["
+							Wed,
+							26 Jun 2019 07: 50: 50 GMT "],"
+							Content - Type ":["
+							im
+							age / x - icon "]}},"
+							timeTaken ":4},{"
+							timestamp ":"
+							2019 - 06 - 26 T07: 50: 50.642 Z ","
+							principal ":null,"
+							session ":null,"
+							request ":{"
+							method ":"
+							GET ","
+							uri ":"
+							http: / /
+								localhost: 8503 / config ","
+							headers ":{"
+							cookie ":["
+							UM_distinctid = 16 b69d37206423 - 060395 fcec2fee - 6353160 - 100200 - 16 b69d372072fb;CNZZDATA1260945749 = 1
+							286020430 - 1560845070 - % 7 C1560845070 "],"
+							accept - language ":["
+							zh - CN,
+							zh;q = 0.9 "],"
+							upgrade - insecure - requests ":["
+							1 "],"
+							host ":["
+							localhost: 8503 "],"
+							connec
+							tion ":["
+							keep - alive "],"
+							cache - control ":["
+							max - age = 0 "],"
+							accept - encoding ":["
+							gzip,
+							deflate,
+							br "],"
+							accept ":["
+							text / html,
+							application / xhtml + xml,
+							applica
+							tion / xml;q = 0.9,
+							image / webp,
+							image / apng,
+							*
+							/*;q=0.8,application/signed-exchange;v=b3"],"user-agent":["Mozilla/5.0 (Windows NT 10.0; Win64; x64) Ap
+							pleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.131 Safari/537.36"]},"remoteAddress":null},"response":{"status":200,"headers":{"Content
+							-Length":["17"],"Date":["Wed, 26 Jun 2019 07:50:50 GMT"],"Content-Type":["text/html;charset=UTF-8"]}},"timeTaken":3},{"timestamp":"2019-06-26
+							T07:50:50.562Z","principal":null,"session":null,"request":{"method":"GET","uri":"http://localhost:8503/favicon.ico","headers":{"referer":["ht
+							tp://localhost:8503/config"],"cookie":["UM_distinctid=16b69d37206423-060395fcec2fee-6353160-100200-16b69d372072fb; CNZZDATA1260945749=1286020
+							430-1560845070-%7C1560845070"],"accept-language":["zh-CN,zh;q=0.9"],"host":["localhost:8503"],"connection":["keep-alive"],"cache-control":["n
+							o-cache"],"accept-encoding":["gzip, deflate, br"],"pragma":["no-cache"],"accept":["image/webp,image/apng,image/*,*/
+							* ;q = 0.8 "],"
+							user - agent ":["
+							M
+							ozilla / 5.0(Windows NT 10.0; Win64; x64) AppleWebKit / 537.36(KHTML, like Gecko) Chrome / 74.0 .3729 .131 Safari / 537.36 "]},"
+							remoteAddress ":null},"
+							response ":{"
+							status ":200,"
+							headers ":{"
+							Accept - Ranges ":["
+							bytes "],"
+							Last - Modified ":["
+							Tue,
+							28 May 2019 09: 45: 27 GMT "],"
+							Content - Length ":["
+							946 "],"
+							Date ":["
+							Wed,
+							26 Jun 2019 07: 50: 50 GMT "],"
+							Content - Type ":["
+							image / x - icon "]}},"
+							timeTaken ":7},{"
+							timestamp ":"
+							2019 - 06 - 26 T07: 50: 50.486 Z ","
+							principal ":null,
+							"session": null,
+							"request": {
+								"method": "GET",
+								"uri": "http://localhost:8503/config",
+								"headers": {
+									"cookie": ["UM_distinctid=16b69d37206423-060395fcec2
+											fee - 6353160 - 100200 - 16 b69d372072fb;CNZZDATA1260945749 = 1286020430 - 1560845070 - % 7 C1560845070 "],"
+											accept - language ":["
+											zh - CN, zh;q = 0.9 "],"
+											upgrade - ins
+											ecure - requests ":["
+											1 "],"
+											host ":["
+											localhost: 8503 "],"
+											connection ":["
+											keep - alive "],"
+											cache - control ":["
+											max - age = 0 "],"
+											accept - encoding ":["
+											gzip, deflate,
+											br "],"
+											accept ":["
+											text / html, application / xhtml + xml, application / xml;q = 0.9, image / webp, image / apng, *
+											/*;q=0.8,application/signed-exchange;v=b3"],"use
+											r-agent":["Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.131 Safari/537.36"]},"remoteAddr
+											ess":null},"response":{"status":200,"headers":{"Content-Length":["17"],"Date":["Wed, 26 Jun 2019 07:50:50 GMT"],"Content-Type":["text/html;ch
+											arset=UTF-8"]}},"timeTaken":4},{"timestamp":"2019-06-26T07:50:50.377Z","principal":null,"session":null,"request":{"method":"GET","uri":"http:
+											//localhost:8503/favicon.ico","headers":{"referer":["http://localhost:8503/config"],"cookie":["UM_distinctid=16b69d37206423-060395fcec2fee-63
+											53160-100200-16b69d372072fb; CNZZDATA1260945749=1286020430-1560845070-%7C1560845070"],"accept-language":["zh-CN,zh;q=0.9"],"host":["localhost
+											:8503"],"connection":["keep-alive"],"cache-control":["no-cache"],"accept-encoding":["gzip, deflate, br"],"pragma":["no-cache"],"accept":["ima
+											ge/webp,image/apng,image/*,*/
+											* ;q = 0.8 "],"
+											user - agent ":["
+											Mozilla / 5.0(Windows NT 10.0; Win64; x64) AppleWebKit / 537.36(KHTML, like Gecko) Chrome /
+											74.0 .3729 .131 Safari / 537.36 "]},"
+											remoteAddress ":null},"
+											response ":{"
+											status ":200,"
+											headers ":{"
+											Accept - Ranges ":["
+											bytes "],"
+											Last - Modified ":["
+											Tue, 28
+											May 2019 09: 45: 27 GMT "],"
+											Content - Length ":["
+											946 "],"
+											Date ":["
+											Wed, 26 Jun 2019 07: 50: 49 GMT "],"
+											Content - Type ":["
+											image / x - icon "]}},"
+											timeTaken ":8},{
+											"timestamp": "2019-06-26T07:50:50.317Z", "principal": null, "session": null, "request": {
+												"method": "GET",
+												"uri": "http://localhost:8503/config",
+												"header
+												s ":{"
+												cookie ":["
+												UM_distinctid = 16 b69d37206423 - 060395 fcec2fee - 6353160 - 100200 - 16 b69d372072fb;CNZZDATA1260945749 = 1286020430 - 1560845070 - % 7 C1560845
+												070 "],"
+												accept - language ":["
+												zh - CN,
+												zh;q = 0.9 "],"
+												upgrade - insecure - requests ":["
+												1 "],"
+												host ":["
+												localhost: 8503 "],"
+												connection ":["
+												keep - alive "],"
+												cache - con
+												trol ":["
+												max - age = 0 "],"
+												accept - encoding ":["
+												gzip,
+												deflate,
+												br "],"
+												accept ":["
+												text / html,
+												application / xhtml + xml,
+												application / xml;q = 0.9,
+												image / webp,
+												image /
+												apng,
+												*
+												/*;q=0.8,application/signed-exchange;v=b3"],"user-agent":["Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like G
+												ecko) Chrome/74.0.3729.131 Safari/537.36"]},"remoteAddress":null},"response":{"status":200,"headers":{"Content-Length":["17"],"Date":["Wed, 2
+												6 Jun 2019 07:50:49 GMT"],"Content-Type":["text/html;charset=UTF-8"]}},"timeTaken":2},{"timestamp":"2019-06-26T07:50:49.922Z","principal":nul
+												l,"session":null,"request":{"method":"GET","uri":"http://localhost:8503/favicon.ico","headers":{"referer":["http://localhost:8503/config"],"c
+												ookie":["UM_distinctid=16b69d37206423-060395fcec2fee-6353160-100200-16b69d372072fb; CNZZDATA1260945749=1286020430-1560845070-%7C1560845070"],
+												"accept-language":["zh-CN,zh;q=0.9"],"host":["localhost:8503"],"connection":["keep-alive"],"cache-control":["no-cache"],"accept-encoding":["g
+												zip, deflate, br"],"pragma":["no-cache"],"accept":["image/webp,image/apng,image/*,*/
+												* ;q = 0.8 "],"
+												user - agent ":["
+												Mozilla / 5.0(Windows NT 10.0; Wi n64; x64) AppleWebKit / 537.36(KHTML, like Gecko) Chrome / 74.0 .3729 .131 Safari / 537.36 "]},"
+												remoteAddress ":null},"
+												response ":{"
+												status ":200,"
+												header
+												s ":{"
+												Accept - Ranges ":["
+												bytes "],"
+												Last - Modified ":["
+												Tue,
+												28 May 2019 09: 45: 27 GMT "],"
+												Content - Length ":["
+												946 "],"
+												Date ":["
+												Wed,
+												26 Jun 2019 07: 50: 49 G
+												MT "],"
+												Content - Type ":["
+												image / x - icon "]}},"
+												timeTaken ":7},{"
+												timestamp ":"
+												2019 - 06 - 26 T07: 50: 49.847 Z ","
+												principal ":null,"
+												session ":null,"
+												request ":{"
+												met
+												hod ":"
+												GET ","
+												uri ":"
+												http: //localhost:8503/config","headers":{"cookie":["UM_distinctid=16b69d37206423-060395fcec2fee-6353160-100200-16b69d372072
+													fb;CNZZDATA1260945749 = 1286020430 - 1560845070 - % 7 C1560845070 "],"
+												accept - language ":["
+												zh - CN,
+												zh;q = 0.9 "],"
+												upgrade - insecure - requests ":["
+												1 "],"
+												host ":["
+												localhost: 8503 "],"
+												connection ":["
+												keep - alive "],"
+												cache - control ":["
+												max - age = 0 "],"
+												accept - encoding ":["
+												gzip,
+												deflate,
+												br "],"
+												accept ":["
+												text / html,
+												appli
+												cation / xhtml + xml,
+												application / xml;q = 0.9,
+												image / webp,
+												image / apng,
+												*
+												/*;q=0.8,application/signed-exchange;v=b3"],"user-agent":["Mozilla/5.0 (Windows
+												 NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.131 Safari/537.36"]},"remoteAddress":null},"response":{"status"
+												:200,"headers":{"Content-Length":["17"],"Date":["Wed, 26 Jun 2019 07:50:49 GMT"],"Content-Type":["text/html;charset=UTF-8"]}},"timeTaken":3},
+												{"timestamp":"2019-06-26T07:50:49.484Z","principal":null,"session":null,"request":{"method":"GET","uri":"http://localhost:8503/favicon.ico","
+												headers":{"referer":["http://localhost:8503/config"],"cookie":["UM_distinctid=16b69d37206423-060395fcec2fee-6353160-100200-16b69d372072fb; CN
+												ZZDATA1260945749=1286020430-1560845070-%7C1560845070"],"accept-language":["zh-CN,zh;q=0.9"],"host":["localhost:8503"],"connection":["keep-ali
+												ve"],"cache-control":["no-cache"],"accept-encoding":["gzip, deflate, br"],"pragma":["no-cache"],"accept":["image/webp,image/apng,image/*,*/
+												* ;
+												q = 0.8 "],"
+												user - agent ":["
+												Mozilla / 5.0(Windows NT 10.0; Win64; x64) AppleWebKit / 537.36(KHTML, like Gecko) Chrome / 74.0 .3729 .131 Safari / 537.36 "]},
+												"remoteAddress": null
+											}, "response": {
+												"status": 200,
+												"headers": {
+													"Accept-Ranges": ["bytes"],
+													"Last-Modified": ["Tue, 28 May 2019 09:45:27 GMT"],
+													"Conte
+													nt - Length ":["
+													946 "],"
+													Date ":["
+													Wed,
+													26 Jun 2019 07: 50: 49 GMT "],"
+													Content - Type ":["
+													image / x - icon "]}},"
+													timeTaken ":8},{"
+													timestamp ":"
+													2019 - 06 - 26 T07: 50: 4
+													9.391 Z ","
+													principal ":null,"
+													session ":null,"
+													request ":{"
+													method ":"
+													GET ","
+													uri ":"
+													http: //localhost:8503/config","headers":{"cookie":["UM_distinctid=16
+														b69d37206423 - 060395 fcec2fee - 6353160 - 100200 - 16 b69d372072fb;CNZZDATA1260945749 = 1286020430 - 1560845070 - % 7 C1560845070 "],"
+													accept - language ":["
+													zh - CN,
+													zh;q = 0.9 "],"
+													upgrade - insecure - requests ":["
+													1 "],"
+													host ":["
+													localhost: 8503 "],"
+													connection ":["
+													keep - alive "],"
+													cache - control ":["
+													max - age = 0 "],"
+													accept - enc
+													oding ":["
+													gzip,
+													deflate,
+													br "],"
+													accept ":["
+													text / html,
+													application / xhtml + xml,
+													application / xml;q = 0.9,
+													image / webp,
+													image / apng,
+													*
+													/*;q=0.8,application/sig
+													ned-exchange;v=b3"],"user-agent":["Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.131 Safa
+													ri/537.36"]},"remoteAddress":null},"response":{"status":200,"headers":{"Content-Length":["17"],"Date":["Wed, 26 Jun 2019 07:50:49 GMT"],"Cont
+													ent-Type":["text/html;charset=UTF-8"]}},"timeTaken":3},{"timestamp":"2019-06-26T07:50:48.201Z","principal":null,"session":null,"request":{"me
+													thod":"GET","uri":"http://localhost:8503/favicon.ico","headers":{"referer":["http://localhost:8503/config"],"cookie":["UM_distinctid=16b69d37
+													206423-060395fcec2fee-6353160-100200-16b69d372072fb; CNZZDATA1260945749=1286020430-1560845070-%7C1560845070"],"accept-language":["zh-CN,zh;q=
+													0.9"],"host":["localhost:8503"],"connection":["keep-alive"],"cache-control":["no-cache"],"accept-encoding":["gzip, deflate, br"],"pragma":["n
+													o-cache"],"accept":["image/webp,image/apng,image/*,*/
+													* ;q = 0.8 "],"
+													user - agent ":["
+													Mozilla / 5.0(Windows NT 10.0; Win64; x64) AppleWebKit / 537.36(K HTML, like Gecko) Chrome / 74.0 .3729 .131 Safari / 537.36 "]},"
+													remoteAddress ":null},"
+													response ":{"
+													status ":200,"
+													headers ":{"
+													Accept - Ranges ":["
+													bytes "],"
+													Last - Modified ":["
+													Tue,
+													28 May 2019 09: 45: 27 GMT "],"
+													Content - Length ":["
+													946 "],"
+													Date ":["
+													Wed,
+													26 Jun 2019 07: 50: 48 GMT "],"
+													Content - Type ":["
+													image / x - i
+													con "]}},"
+													timeTaken ":4},{"
+													timestamp ":"
+													2019 - 06 - 26 T07: 50: 48.113 Z ","
+													principal ":null,"
+													session ":null,"
+													request ":{"
+													method ":"
+													GET ","
+													uri ":"
+													http: //localh
+														ost: 8503 / config ","
+													headers ":{"
+													cookie ":["
+													UM_distinctid = 16 b69d37206423 - 060395 fcec2fee - 6353160 - 100200 - 16 b69d372072fb;CNZZDATA1260945749 = 12860204
+													30 - 1560845070 - % 7 C1560845070 "],"
+													accept - language ":["
+													zh - CN,
+													zh;q = 0.9 "],"
+													upgrade - insecure - requests ":["
+													1 "],"
+													host ":["
+													localhost: 8503 "],"
+													connection ":[
+													"keep-alive"],
+												"cache-control": ["max-age=0"],
+												"accept-encoding": ["gzip, deflate, br"],
+												"accept": ["text/html,application/xhtml+xml,application/xm
+														l;q = 0.9, image / webp, image / apng, *
+														/*;q=0.8,application/signed-exchange;v=b3"],"user-agent":["Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebK
+														it/537.36 (KHTML, like Gecko) Chrome/74.0.3729.131 Safari/537.36"]},"remoteAddress":null},"response":{"status":200,"headers":{"Content-Length
+														":["17"],"Date":["Wed, 26 Jun 2019 07:50:48 GMT"],"Content-Type":["text/html;charset=UTF-8"]}},"timeTaken":8},{"timestamp":"2019-06-26T07:50:
+														46.070Z","principal":null,"session":null,"request":{"method":"GET","uri":"http://localhost:8503/config","headers":{"cookie":["UM_distinctid=1
+														6b69d37206423-060395fcec2fee-6353160-100200-16b69d372072fb; CNZZDATA1260945749=1286020430-1560845070-%7C1560845070"],"accept-language":["zh-C
+														N,zh;q=0.9"],"purpose":["prefetch"],"upgrade-insecure-requests":["1"],"host":["localhost:8503"],"connection":["keep-alive"],"accept-encoding"
+														:["gzip, deflate, br"],"accept":["text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/
+														* ;q = 0.8, application / signed - ex
+														change;v = b3 "],"
+														user - agent ":["
+														Mozilla / 5.0(Windows NT 10.0; Win64; x64) AppleWebKit / 537.36(KHTML, like Gecko) Chrome / 74.0 .3729 .131 Safari / 537
+														.36 "]},"
+														remoteAddress ":null},"
+														response ":{"
+														status ":200,"
+														headers ":{"
+														Content - Length ":["
+														17 "],"
+														Date ":["
+														Wed, 26 Jun 2019 07: 50: 46 GMT "],"
+														Content - Ty
+														pe ":["
+														text / html;charset = UTF - 8 "]}},"
+														timeTaken ":5},{"
+														timestamp ":"
+														2019 - 06 - 26 T07: 38: 40.037 Z ","
+														principal ":null,"
+														session ":null,"
+														request ":{"
+														method ":
+														"GET", "uri": "http://localhost:8503/favicon.ico", "headers": {
+															"referer": ["http://localhost:8503/config"],
+															"cookie": ["UM_distinctid=16b69d37206423 -
+																060395 fcec2fee - 6353160 - 100200 - 16 b69d372072fb;CNZZDATA1260945749 = 1286020430 - 1560845070 - % 7 C1560845070 "],"
+																accept - language ":["
+																zh - CN, zh;q = 0.9 "],
+																"host": ["localhost:8503"], "connection": ["keep-alive"], "cache-control": ["no-cache"], "accept-encoding": ["gzip, deflate, br"], "pragma": ["no-cach
+																	e "],"
+																	accept ":["
+																	image / webp, image / apng, image /*,*/ * ;q = 0.8 "],"
+																	user - agent ":["
+																	Mozilla / 5.0(Windows NT 10.0; Win64; x64) AppleWebKit / 537.36(KHTML,
+																		like Gecko) Chrome / 74.0 .3729 .131 Safari / 537.36 "]},"
+																	remoteAddress ":null},"
+																	response ":{"
+																	status ":200,"
+																	headers ":{"
+																	Accept - Ranges ":["
+																	bytes "],"
+																	Last - M
+																	odified ":["
+																	Tue, 28 May 2019 09: 45: 27 GMT "],"
+																	Content - Length ":["
+																	946 "],"
+																	Date ":["
+																	Wed, 26 Jun 2019 07: 38: 39 GMT "],"
+																	Content - Type ":["
+																	image / x - icon "]}
+																}, "timeTaken": 5
+															},
+															{
+																"timestamp": "2019-06-26T07:38:39.954Z",
+																"principal": null,
+																"session": null,
+																"request": {
+																	"method": "GET",
+																	"uri": "http://localhost:85
+																	03 / config ","
+																	headers ":{"
+																	cookie ":["
+																	UM_distinctid = 16 b69d37206423 - 060395 fcec2fee - 6353160 - 100200 - 16 b69d372072fb;CNZZDATA1260945749 = 1286020430 - 156
+																	0845070 - % 7 C1560845070 "],"
+																	accept - language ":["
+																	zh - CN,
+																	zh;q = 0.9 "],"
+																	upgrade - insecure - requests ":["
+																	1 "],"
+																	host ":["
+																	localhost: 8503 "],"
+																	connection ":["
+																	keep -
+																	alive "],"
+																	cache - control ":["
+																	max - age = 0 "],"
+																	accept - encoding ":["
+																	gzip,
+																	deflate,
+																	br "],"
+																	accept ":["
+																	text / html,
+																	application / xhtml + xml,
+																	application / xml;q = 0.
+																	9,
+																	image / webp,
+																	image / apng,
+																	*
+																	/*;q=0.8,application/signed-exchange;v=b3"],"user-agent":["Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537
+																	.36 (KHTML, like Gecko) Chrome/74.0.3729.131 Safari/537.36"]},"remoteAddress":null},"response":{"status":200,"headers":{"Content-Length":["17
+																	"],"Date":["Wed, 26 Jun 2019 07:38:39 GMT"],"Content-Type":["text/html;charset=UTF-8"]}},"timeTaken":4},{"timestamp":"2019-06-26T07:38:39.871
+																	Z","principal":null,"session":null,"request":{"method":"GET","uri":"http://localhost:8503/favicon.ico","headers":{"referer":["http://localhos
+																	t:8503/config"],"cookie":["UM_distinctid=16b69d37206423-060395fcec2fee-6353160-100200-16b69d372072fb; CNZZDATA1260945749=1286020430-156084507
+																	0-%7C1560845070"],"accept-language":["zh-CN,zh;q=0.9"],"host":["localhost:8503"],"connection":["keep-alive"],"cache-control":["no-cache"],"ac
+																	cept-encoding":["gzip, deflate, br"],"pragma":["no-cache"],"accept":["image/webp,image/apng,image/*,*/
+																	* ;q = 0.8 "],"
+																	user - agent ":["
+																	Mozilla / 5.0(W indows NT 10.0; Win64; x64) AppleWebKit / 537.36(KHTML, like Gecko) Chrome / 74.0 .3729 .131 Safari / 537.36 "]},"
+																	remoteAddress ":null},"
+																	response ":{"
+																	s
+																	tatus ":200,"
+																	headers ":{"
+																	Accept - Ranges ":["
+																	bytes "],"
+																	Last - Modified ":["
+																	Tue,
+																	28 May 2019 09: 45: 27 GMT "],"
+																	Content - Length ":["
+																	946 "],"
+																	Date ":["
+																	Wed,
+																	26 J
+																	un 2019 07: 38: 38 GMT "],"
+																	Content - Type ":["
+																	image / x - icon "]}},"
+																	timeTaken ":3},{"
+																	timestamp ":"
+																	2019 - 06 - 26 T07: 38: 39.779 Z ","
+																	principal ":null,"
+																	session ":nu
+																	ll,
+																	"request": {
+																		"method": "GET",
+																		"uri": "http://localhost:8503/config",
+																		"headers": {
+																			"cookie": ["UM_distinctid=16b69d37206423-060395fcec2fee-6353160-1
+																				00200 - 16 b69d372072fb;CNZZDATA1260945749 = 1286020430 - 1560845070 - % 7 C1560845070 "],"
+																				accept - language ":["
+																				zh - CN, zh;q = 0.9 "],"
+																				upgrade - insecure - request
+																				s ":["
+																				1 "],"
+																				host ":["
+																				localhost: 8503 "],"
+																				connection ":["
+																				keep - alive "],"
+																				cache - control ":["
+																				max - age = 0 "],"
+																				accept - encoding ":["
+																				gzip, deflate, br "],"
+																				accept ": ["text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3"], "user-agent": ["Mo
+																					zilla / 5.0(Windows NT 10.0; Win64; x64) AppleWebKit / 537.36(KHTML, like Gecko) Chrome / 74.0 .3729 .131 Safari / 537.36 "]},"
+																					remoteAddress ":null},"
+																					r
+																					esponse ":{"
+																					status ":200,"
+																					headers ":{"
+																					Content - Length ":["
+																					17 "],"
+																					Date ":["
+																					Wed, 26 Jun 2019 07: 38: 38 GMT "],"
+																					Content - Type ":["
+																					text / html;charset = UTF - 8 "]
+																				}
+																			},
+																			"timeTaken": 7
+																		},
+																		{
+																			"timestamp": "2019-06-26T07:38:39.703Z",
+																			"principal": null,
+																			"session": null,
+																			"request": {
+																				"method": "GET",
+																				"uri": "http://localhost:8
+																				503 / favicon.ico ","
+																				headers ":{"
+																				referer ":["
+																				http: //localhost:8503/config"],"cookie":["UM_distinctid=16b69d37206423-060395fcec2fee-6353160-100200-
+																					16 b69d372072fb;CNZZDATA1260945749 = 1286020430 - 1560845070 - % 7 C1560845070 "],"
+																				accept - language ":["
+																				zh - CN,
+																				zh;q = 0.9 "],"
+																				host ":["
+																				localhost: 8503 "],"
+																				conn
+																				ection ":["
+																				keep - alive "],"
+																				cache - control ":["
+																				no - cache "],"
+																				accept - encoding ":["
+																				gzip,
+																				deflate,
+																				br "],"
+																				pragma ":["
+																				no - cache "],"
+																				accept ":["
+																				image / webp,
+																				image /
+																				apng,
+																				image /*,*/ * ;q = 0.8 "],"
+																				user - agent ":["
+																				Mozilla / 5.0(Windows NT 10.0; Win64; x64) AppleWebKit / 537.36(KHTML, like Gecko) Chrome / 74.0 .3729 .13
+																				1 Safari / 537.36 "]},"
+																				remoteAddress ":null},"
+																				response ":{"
+																				status ":200,"
+																				headers ":{"
+																				Accept - Ranges ":["
+																				bytes "],"
+																				Last - Modified ":["
+																				Tue,
+																				28 May 2019 09: 45: 27 GMT "],"
+																				Content - Length ":["
+																				946 "],"
+																				Date ":["
+																				Wed,
+																				26 Jun 2019 07: 38: 38 GMT "],"
+																				Content - Type ":["
+																				image / x - icon "]}},"
+																				timeTaken ":6},{"
+																				timestamp ":"
+																				2019 - 06 - 26 T07: 38: 39.610 Z ","
+																				principal ":null,"
+																				session ":null,"
+																				request ":{"
+																				method ":"
+																				GET ","
+																				uri ":"
+																				http: //localhost:8503/config","headers":{"cookie":
+																					["UM_distinctid=16b69d37206423-060395fcec2fee-6353160-100200-16b69d372072fb; CNZZDATA1260945749=1286020430-1560845070-%7C1560845070"],
+																				"accept -
+																				language ":["
+																				zh - CN,
+																				zh;q = 0.9 "],"
+																				upgrade - insecure - requests ":["
+																				1 "],"
+																				host ":["
+																				localhost: 8503 "],"
+																				connection ":["
+																				keep - alive "],"
+																				cache - control ":["
+																				max - a
+																				ge = 0 "],"
+																				accept - encoding ":["
+																				gzip,
+																				deflate,
+																				br "],"
+																				accept ":["
+																				text / html,
+																				application / xhtml + xml,
+																				application / xml;q = 0.9,
+																				image / webp,
+																				image / apng,
+																				*
+																				/*;q=0
+																				.8,application/signed-exchange;v=b3"],"user-agent":["Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/
+																				74.0.3729.131 Safari/537.36"]},"remoteAddress":null},"response":{"status":200,"headers":{"Content-Length":["17"],"Date":["Wed, 26 Jun 2019 07
+																				:38:38 GMT"],"Content-Type":["text/html;charset=UTF-8"]}},"timeTaken":6},{"timestamp":"2019-06-26T07:38:39.003Z","principal":null,"session":n
+																				ull,"request":{"method":"GET","uri":"http://localhost:8503/favicon.ico","headers":{"referer":["http://localhost:8503/config"],"cookie":["UM_d
+																				istinctid=16b69d37206423-060395fcec2fee-6353160-100200-16b69d372072fb; CNZZDATA1260945749=1286020430-1560845070-%7C1560845070"],"accept-langu
+																				age":["zh-CN,zh;q=0.9"],"host":["localhost:8503"],"connection":["keep-alive"],"cache-control":["no-cache"],"accept-encoding":["gzip, deflate,
+																				 br"],"pragma":["no-cache"],"accept":["image/webp,image/apng,image/*,*/
+																				* ;q = 0.8 "],"
+																				user - agent ":["
+																				Mozilla / 5.0(Windows NT 10.0; Win64; x64) App
+																				leWebKit / 537.36(KHTML, like Gecko) Chrome / 74.0 .3729 .131 Safari / 537.36 "]},"
+																				remoteAddress ":null},"
+																				response ":{"
+																				status ":200,"
+																				headers ":{"
+																				Accept - R
+																				anges ":["
+																				bytes "],"
+																				Last - Modified ":["
+																				Tue,
+																				28 May 2019 09: 45: 27 GMT "],"
+																				Content - Length ":["
+																				946 "],"
+																				Date ":["
+																				Wed,
+																				26 Jun 2019 07: 38: 38 GMT "],"
+																				Content -
+																				Type ":["
+																				image / x - icon "]}},"
+																				timeTaken ":5},{"
+																				timestamp ":"
+																				2019 - 06 - 26 T07: 38: 38.910 Z ","
+																				principal ":null,"
+																				session ":null,"
+																				request ":{"
+																				method ":"
+																				GET ","
+																				u
+																				ri ":"
+																				http: //localhost:8503/config","headers":{"cookie":["UM_distinctid=16b69d37206423-060395fcec2fee-6353160-100200-16b69d372072fb; CNZZDATA1
+																					260945749 = 1286020430 - 1560845070 - % 7 C1560845070 "],"
+																				accept - language ":["
+																				zh - CN,
+																				zh;q = 0.9 "],"
+																				upgrade - insecure - requests ":["
+																				1 "],"
+																				host ":["
+																				localhost: 850
+																				3 "],"
+																				connection ":["
+																				keep - alive "],"
+																				cache - control ":["
+																				max - age = 0 "],"
+																				accept - encoding ":["
+																				gzip,
+																				deflate,
+																				br "],"
+																				accept ":["
+																				text / html,
+																				application / xhtml +
+																				xml,
+																				application / xml;q = 0.9,
+																				image / webp,
+																				image / apng,
+																				*
+																				/*;q=0.8,application/signed-exchange;v=b3"],"user-agent":["Mozilla/5.0 (Windows NT 10.0; Win
+																				64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.131 Safari/537.36"]},"remoteAddress":null},"response":{"status":200,"headers
+																				":{"Content-Length":["17"],"Date":["Wed, 26 Jun 2019 07:38:38 GMT"],"Content-Type":["text/html;charset=UTF-8"]}},"timeTaken":7},{"timestamp":
+																				"2019-06-26T07:38:37.414Z","principal":null,"session":null,"request":{"method":"GET","uri":"http://localhost:8503/favicon.ico","headers":{"re
+																				ferer":["http://localhost:8503/config"],"cookie":["UM_distinctid=16b69d37206423-060395fcec2fee-6353160-100200-16b69d372072fb; CNZZDATA1260945
+																				749=1286020430-1560845070-%7C1560845070"],"accept-language":["zh-CN,zh;q=0.9"],"host":["localhost:8503"],"connection":["keep-alive"],"cache-c
+																				ontrol":["no-cache"],"accept-encoding":["gzip, deflate, br"],"pragma":["no-cache"],"accept":["image/webp,image/apng,image/*,*/
+																				* ;q = 0.8 "],"
+																				user -
+																				agent ":["
+																				Mozilla / 5.0(Windows NT 10.0; Win64; x64) AppleWebKit / 537.36(KHTML, like Gecko) Chrome / 74.0 .3729 .131 Safari / 537.36 "]},"
+																				remoteAddre
+																				ss ":null},"
+																				response ":{"
+																				status ":200,"
+																				headers ":{"
+																				Accept - Ranges ":["
+																				bytes "],"
+																				Last - Modified ":["
+																				Tue,
+																				28 May 2019 09: 45: 27 GMT "],"
+																				Content - Length ":["
+																				946 "],"
+																				Date ":["
+																				Wed,
+																				26 Jun 2019 07: 38: 37 GMT "],"
+																				Content - Type ":["
+																				image / x - icon "]}},"
+																				timeTaken ":28},{"
+																				timestamp ":"
+																				2019 - 06 - 26 T07: 38: 37.214 Z ","
+																				pri
+																				ncipal ":null,"
+																				session ":null,"
+																				request ":{"
+																				method ":"
+																				GET ","
+																				uri ":"
+																				http: //localhost:8503/config","headers":{"cookie":["UM_distinctid=16b69d37206423
+																					-060395 fcec2fee - 6353160 - 100200 - 16 b69d372072fb;CNZZDATA1260945749 = 1286020430 - 1560845070 - % 7 C1560845070 "],"
+																				accept - language ":["
+																				zh - CN,
+																				zh;q = 0.9 "],
+																				"upgrade-insecure-requests": ["1"],
+																				"host": ["localhost:8503"],
+																				"connection": ["keep-alive"],
+																				"cache-control": ["max-age=0"],
+																				"accept-encoding": ["gzi
+																						p, deflate, br "],"
+																						accept ":["
+																						text / html, application / xhtml + xml, application / xml;q = 0.9, image / webp, image / apng, *
+																						/*;q=0.8,application/signed-exchange
+																						;v=b3"],"user-agent":["Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.131 Safari/537.36"]}
+																						,"remoteAddress":null},"response":{"status":200,"headers":{"Content-Length":["17"],"Date":["Wed, 26 Jun 2019 07:38:37 GMT"],"Content-Type":["
+																						text/html;charset=UTF-8"]}},"timeTaken":79}]}
+```
+
+
+ 
+
+
+  
 
  
 
