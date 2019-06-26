@@ -30,7 +30,7 @@ spring:
             # git仓库的密码
             password: 726267tyf
 server:
- port: 8889
+ port: 8887
 
 
 

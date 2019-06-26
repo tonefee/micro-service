@@ -2,6 +2,8 @@ package com.fukun.consul.producer1.controller;
 
 import com.fukun.producer.api.HelloService;
 import org.apache.commons.lang.StringUtils;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.concurrent.atomic.AtomicInteger;
@@ -10,12 +12,16 @@ import java.util.concurrent.atomic.LongAdder;
 /**
  * 测试控制器
  *
+ * 使用@RefreshScope注解的类，会在接到SpringCloud配置中心配置刷新的时候，
+ * 自动将新的配置更新到该类对应的字段中。
  * @author tangyifei
  * @since 2019-6-4 14:47:08
  * @since JDK1.8
  */
 @RestController
+@RefreshScope
 public class HelloController implements HelloService {
+
     LongAdder la = new LongAdder();
     AtomicInteger ac = new AtomicInteger();
 
@@ -70,5 +76,13 @@ public class HelloController implements HelloService {
             System.err.println("失败");
         }
         return "zuul-retry";
+    }
+
+    @Value("${neo.hello}")
+    private String hello;
+
+    @RequestMapping("/config")
+    public String getConfigDetail() {
+        return this.hello;
     }
 }

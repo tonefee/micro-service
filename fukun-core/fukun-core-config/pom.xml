@@ -19,6 +19,7 @@
 
     <modules>
         <module>fukun-core-config-server</module>
+        <module>fukun-core-config-server01</module>
     </modules>
 
 
