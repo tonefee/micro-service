@@ -62,7 +62,6 @@ public class HelloController implements HelloService {
 
     @GetMapping("/zuul/retry")
     public String zuul() {
-//        System.out.println("重试次数：" + ac.addAndGet(1));
         la.add(1);
         System.out.println("重试次数：" + la.intValue());
         try {
