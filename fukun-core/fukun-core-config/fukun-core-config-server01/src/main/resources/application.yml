@@ -28,7 +28,7 @@ spring:
             # git仓库的账号
             username: 15062230055@163.com
             # git仓库的密码
-            password: 726267tyf
+            password:
 server:
  port: 8887
 
