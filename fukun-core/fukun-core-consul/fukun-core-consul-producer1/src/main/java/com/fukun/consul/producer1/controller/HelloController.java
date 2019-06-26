@@ -5,6 +5,7 @@ import org.apache.commons.lang.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.LongAdder;
 
 /**
  * 测试控制器
@@ -15,6 +16,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 @RestController
 public class HelloController implements HelloService {
+    LongAdder la = new LongAdder();
     AtomicInteger ac = new AtomicInteger();
 
     @Override
@@ -60,7 +62,9 @@ public class HelloController implements HelloService {
 
     @GetMapping("/zuul/retry")
     public String zuul() {
-        System.out.println("重试次数：" + ac.addAndGet(1));
+//        System.out.println("重试次数：" + ac.addAndGet(1));
+        la.add(1);
+        System.out.println("重试次数：" + la.intValue());
         try {
             Thread.sleep(1000000);
         } catch (Exception e) {
