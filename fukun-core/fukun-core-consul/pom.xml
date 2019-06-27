@@ -26,6 +26,7 @@
         <module>fukun-core-consul-producer2</module>
         <module>fukun-core-consul-consumer</module>
         <module>fukun-core-consul-producer-api</module>
+        <module>fukun-core-consul-config</module>
     </modules>
 
     <!--依赖管理，用于管理spring-cloud的依赖 -->

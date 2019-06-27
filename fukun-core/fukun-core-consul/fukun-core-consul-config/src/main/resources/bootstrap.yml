@@ -1,0 +1,41 @@
+spring:
+  application:
+     name: fukun-core-consul-config
+  profiles:
+      active: test
+  cloud:
+     consul:
+        host: localhost
+        port: 8500
+        discovery:
+          enabled: true
+          register: true
+          tags: consul-config-service
+          serviceName: ${spring.application.name}
+          hostname: ${spring.application.name}
+          port: ${server.port}
+          instanceId: ${spring.application.name}:${server.port}
+          preferIpAddress: true
+          healthCheckInterval: 10s
+          healthCheckUrl: http://${spring.cloud.client.ip-address}:${server.port}/health
+          heartbeat:
+             enabled: true
+        config:
+             # 允许配置中心
+             enabled: true
+             # 表示consul中的key-value中的value内容，采用YAML格式，据说有四种 YAML PROPERTIES KEY-VALUE FILES
+             format: YAML
+             # config 表示consul用于存储配置的文件夹根目录名为config
+             prefix: config
+             # application 表示配置文件对应的默认应用名称（优先获取当前服务名称配置，没有的话到application里找）
+             defaultContext: config-center-server
+             # 表示如果有多个profile(eg: 开发环境dev，测试环境test...) ，则key名中的profile与defaultContext之间，用什么分隔符来表示（例如config/config-center-server,dev/data）
+             profileSeparator: ','
+             # data 表示最后一层节点的key值名称，一般默认为data
+             data-key: data
+
+server:
+ port: 8886
+
+
+
