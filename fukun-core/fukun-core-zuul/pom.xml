@@ -12,16 +12,20 @@
     <description>fukun-core-zuul</description>
 
     <parent>
-        <groupId>com.fukun</groupId>
-        <artifactId>fukun-parent</artifactId>
-        <version>1.0.0-SNAPSHOT</version>
-        <relativePath/>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>2.0.6.RELEASE</version>
     </parent>
+
+    <properties>
+        <lombok.version>1.16.18</lombok.version>
+        <parent.version>1.0.0-SNAPSHOT</parent.version>
+        <finchley.version>Finchley.SR2</finchley.version>
+    </properties>
 
     <modules>
         <module>fukun-core-zuul-server</module>
     </modules>
-
 
     <!--依赖管理，用于管理spring-cloud的依赖 -->
     <dependencyManagement>
@@ -35,6 +39,5 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
-
 
 </project>
