@@ -19,7 +19,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.util.ClassUtils;
 
 /**
- * 自动配置类
+ * 分布式锁的自动配置类
  * 备注：redisson配置方法：https://github.com/redisson/redisson/wiki/
  *
  * @author tangyifei
