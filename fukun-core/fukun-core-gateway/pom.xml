@@ -6,7 +6,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.fukun</groupId>
     <artifactId>fukun-core-gateway</artifactId>
-    <version>${parent.version}</version>
+    <version>${gateway.parent.version}</version>
     <packaging>pom</packaging>
     <name>fukun-core-gateway</name>
     <description>fukun-core-gateway</description>
@@ -22,5 +22,8 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
 
+    <properties>
+        <gateway.parent.version>1.0.0-SNAPSHOT</gateway.parent.version>
+    </properties>
 
 </project>

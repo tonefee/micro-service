@@ -5,13 +5,13 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>fukun-core-gateway-server</artifactId>
-    <version>${parent.version}</version>
+    <version>${gateway.parent.version}</version>
     <packaging>jar</packaging>
 
     <parent>
         <groupId>com.fukun</groupId>
         <artifactId>fukun-core-gateway</artifactId>
-        <version>${parent.version}</version>
+        <version>${gateway.parent.version}</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 

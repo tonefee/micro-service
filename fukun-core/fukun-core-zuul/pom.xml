@@ -6,7 +6,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.fukun</groupId>
     <artifactId>fukun-core-zuul</artifactId>
-    <version>${parent.version}</version>
+    <version>${zuul.parent.version}</version>
     <packaging>pom</packaging>
     <name>fukun-core-zuul</name>
     <description>fukun-core-zuul</description>
@@ -14,6 +14,10 @@
     <modules>
         <module>fukun-core-zuul-server</module>
     </modules>
+
+    <properties>
+        <zuul.parent.version>1.0.0-SNAPSHOT</zuul.parent.version>
+    </properties>
 
     <parent>
         <groupId>com.fukun</groupId>
