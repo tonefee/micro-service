@@ -9,10 +9,10 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.validator.constraints.Length;
-import org.hibernate.validator.constraints.NotBlank;
 
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
+import javax.validation.constraints.NotBlank;
 
 /**
  * 登录凭证持久层对象
@@ -51,13 +51,13 @@ public class LoginCredential extends BasePO<Long> {
     private String userId;
 
     @ApiModelProperty(value = "账号类型", example = "1")
-    @EnumValue(enumClass = LoginCredential.TypeEnum.class, enumMethod = "isValidName")
+    @EnumValue(enumClass = LoginCredential.LoginCredentialTypeEnum.class, enumMethod = "isValidName")
     private String type;
 
     /**
      * 账号类型枚举
      */
-    public enum TypeEnum {
+    public enum LoginCredentialTypeEnum {
         /**
          * 自定义
          */
@@ -68,7 +68,7 @@ public class LoginCredential extends BasePO<Long> {
         UNION_ID;
 
         public static boolean isValidName(String name) {
-            for(LoginCredential.TypeEnum typeEnum : LoginCredential.TypeEnum.values()) {
+            for(LoginCredential.LoginCredentialTypeEnum typeEnum : LoginCredential.LoginCredentialTypeEnum.values()) {
                 if (typeEnum.name().equals(name)) {
                     return true;
                 }

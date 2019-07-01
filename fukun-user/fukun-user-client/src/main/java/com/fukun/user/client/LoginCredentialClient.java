@@ -3,7 +3,7 @@ package com.fukun.user.client;
 import com.fukun.commons.constants.ServerConstants;
 import com.fukun.commons.service.RestfulCrudService;
 import com.fukun.user.model.po.LoginCredential;
-import org.springframework.cloud.netflix.feign.FeignClient;
+import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 

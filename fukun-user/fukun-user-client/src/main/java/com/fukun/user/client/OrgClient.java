@@ -4,7 +4,7 @@ import com.fukun.commons.constants.ServerConstants;
 import com.fukun.commons.model.bo.Node;
 import com.fukun.commons.service.RestfulCrudService;
 import com.fukun.user.model.po.Org;
-import org.springframework.cloud.netflix.feign.FeignClient;
+import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 

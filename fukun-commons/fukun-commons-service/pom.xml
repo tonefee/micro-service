@@ -20,12 +20,13 @@
         <dependency>
             <groupId>org.mybatis.spring.boot</groupId>
             <artifactId>mybatis-spring-boot-starter</artifactId>
-            <version>${mybatis-spring-boot}</version>
+            <version>${mybatis.spring.boot}</version>
         </dependency>
 
         <dependency>
             <groupId>tk.mybatis</groupId>
             <artifactId>mapper</artifactId>
+            <version>${tk.mapper.version}</version>
         </dependency>
 
         <dependency>
@@ -82,7 +83,7 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
                 <configuration>
-                    <classifier></classifier>
+                    <classifier/>
                 </configuration>
             </plugin>
         </plugins>

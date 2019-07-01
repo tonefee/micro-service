@@ -8,7 +8,6 @@
     <version>${parent.version}</version>
     <packaging>jar</packaging>
 
-    <!--找到父pom-->
     <parent>
         <groupId>com.fukun</groupId>
         <artifactId>fukun-user</artifactId>
@@ -26,7 +25,7 @@
         <dependency>
             <groupId>org.hibernate</groupId>
             <artifactId>hibernate-validator</artifactId>
-            <version>${hibernate.validator.version}</version>
+            <version>${hibernate-validator.version}</version>
         </dependency>
         <dependency>
             <groupId>com.fukun</groupId>
@@ -50,11 +49,10 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
                 <configuration>
-                    <classifier></classifier>
+                    <classifier/>
                 </configuration>
             </plugin>
         </plugins>
     </build>
-
 
 </project>

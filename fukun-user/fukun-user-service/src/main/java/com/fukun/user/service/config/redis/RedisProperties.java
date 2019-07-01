@@ -18,6 +18,8 @@ import org.springframework.context.annotation.Configuration;
 @Setter
 public class RedisProperties {
 
+    private Integer database;
+
     private String host;
 
     private String password;
@@ -30,7 +32,7 @@ public class RedisProperties {
     private Pool pool;
 
     @Configuration
-    @ConfigurationProperties(prefix = "spring.redis.pool")
+    @ConfigurationProperties(prefix = "spring.redis.jedis.pool")
     @Getter
     @Setter
     class Pool {

@@ -11,10 +11,10 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.validator.constraints.Length;
-import org.hibernate.validator.constraints.NotBlank;
 
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
+import javax.validation.constraints.NotBlank;
 
 /**
  * 组织架构持久层对象
@@ -43,13 +43,13 @@ public class Org extends BaseSortTreePO<Long> {
 
     @ApiModelProperty(value = "类型", example = "1")
     @NotBlank(groups = CreateGroup.class)
-    @EnumValue(enumClass = TypeEnum.class, enumMethod = "isValidName", groups = {CreateGroup.class, UpdateGroup.class})
+    @EnumValue(enumClass = OrgTypeEnum.class, enumMethod = "isValidName", groups = {CreateGroup.class, UpdateGroup.class})
     private String type;
 
     /**
      * 组织架构类型枚举
      */
-    public enum TypeEnum {
+    public enum OrgTypeEnum {
         /**
          * 公司
          */
@@ -64,7 +64,7 @@ public class Org extends BaseSortTreePO<Long> {
         GROUP;
 
         public static boolean isValidName(String name) {
-            for(TypeEnum typeEnum : TypeEnum.values()) {
+            for(OrgTypeEnum typeEnum : OrgTypeEnum.values()) {
                 if (typeEnum.name().equals(name)) {
                     return true;
                 }

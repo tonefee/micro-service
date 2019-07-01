@@ -14,6 +14,7 @@ import org.springframework.util.Assert;
 import tk.mybatis.mapper.entity.Condition;
 import tk.mybatis.mapper.entity.Example;
 
+import javax.annotation.Resource;
 import java.lang.reflect.ParameterizedType;
 import java.util.ArrayList;
 import java.util.Date;
@@ -29,7 +30,7 @@ import java.util.List;
  */
 public abstract class BaseMySqlCrudServiceImpl<E extends PO<PK>, PK> implements CrudService<E, PK> {
 
-    @Autowired
+    @Resource
     protected CrudMapper<E> crudMapper;
 
     protected Class<E> poType;
