@@ -6,6 +6,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
+import javax.annotation.Resource;
+
 /**
  * redis属性配置类
  *
@@ -28,7 +30,7 @@ public class RedisProperties {
 
     private Integer port;
 
-    @Autowired
+    @Resource
     private Pool pool;
 
     @Configuration

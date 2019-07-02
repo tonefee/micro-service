@@ -7,7 +7,6 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.CachingConfigurerSupport;
@@ -29,6 +28,8 @@ import org.springframework.data.redis.serializer.RedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 import redis.clients.jedis.JedisPoolConfig;
 
+import javax.annotation.Resource;
+
 /**
  * redis配置类
  *
@@ -40,7 +41,7 @@ import redis.clients.jedis.JedisPoolConfig;
 @Slf4j
 public class RedisConfig extends CachingConfigurerSupport {
 
-    @Autowired
+    @Resource
     private RedisProperties redisProperties;
 
     /**
