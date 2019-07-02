@@ -29,9 +29,8 @@ public class StockServiceImpl extends BaseMySqlCrudServiceImpl<StockPO, String> 
     @Override
     @LcnTransaction
     @Transactional(value = TRANSACTION_MANAGER, rollbackFor = Exception.class)
-    public int reduceStock(String stockId) {
+    public void reduceStock(String stockId) {
         int count = stockMapper.reduceStock(stockId);
         log.info("执行减少库存影响的行数" + count);
-        return count;
     }
 }

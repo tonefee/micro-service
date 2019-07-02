@@ -28,8 +28,8 @@ public class StockController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public int reduceStock() {
-        return stockService.reduceStock("1");
+    public void reduceStock() {
+        stockService.reduceStock("1");
     }
 
 }

@@ -17,6 +17,6 @@ public interface StockService extends CrudService<StockPO, String> {
      * @param stockId 库存主键
      * @return 影响的行数
      */
-    int reduceStock(String stockId);
+    void reduceStock(String stockId);
 
 }

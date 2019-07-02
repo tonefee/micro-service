@@ -20,5 +20,5 @@ public interface StockClient {
      * @return 影响的行数
      */
     @RequestMapping(value = "/stocks", method = RequestMethod.POST)
-    int reduceStock();
+    void reduceStock();
 }

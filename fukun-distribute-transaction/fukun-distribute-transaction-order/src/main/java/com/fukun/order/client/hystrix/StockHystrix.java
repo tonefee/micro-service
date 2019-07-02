@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 public class StockHystrix implements StockClient {
 
     @Override
-    public int reduceStock() {
+    public void reduceStock() {
         throw new BusinessException(BusinessExceptionEnum.REMOTE_ACCESS_ERROR.getResultCode());
     }
 }

@@ -34,15 +34,14 @@ public class OrderServiceImpl extends BaseMySqlCrudServiceImpl<OrderPO, String> 
 
     @Override
     @LcnTransaction
-    @Transactional(value = TRANSACTION_MANAGER, noRollbackFor = Exception.class)
+    @Transactional(value = TRANSACTION_MANAGER, rollbackFor = Exception.class)
     public int addOrder(OrderPO orderPO) {
-        // 减少库存操作
-        try {
-            stockClient.reduceStock();
-        } catch (NullPointerException e) {
-            // TODO 有待解决此处的空指针异常
-            log.error("有待解决此处的空指针异常", e);
-        }
+        // 减少库存操作，这里注意：如果reduceStock有返回值，
+        // 可能会导致生成的代理类存在返回值的相关的强制类型转换。
+        // 比如代理类中的代码，有返回值的话会有类型强转操作将null转为Integer再转为int，
+        // 转换实际执行代码为((Integer)null).intValue()，所以会报控制针。
+        // 详情请查看https://ask.csdn.net/questions/648332   java动态代理报 空指针异常。
+        stockClient.reduceStock();
         String uuid = UUID.randomUUID().toString().replaceAll("-", "");
         orderPO.setId(uuid);
         orderPO.setCreateTime(new Date());
