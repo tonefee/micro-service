@@ -1,5 +1,6 @@
 package com.fukun.stock.web;
 
+import com.fukun.commons.web.annotations.ResponseResult;
 import com.fukun.stock.service.stock.StockService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -16,7 +17,7 @@ import javax.annotation.Resource;
  * @author tangyifei
  * @since 2019-5-24 15:48:53
  */
-//@ResponseResult
+@ResponseResult
 @RestController("StockController")
 @RequestMapping("/stocks")
 @Slf4j

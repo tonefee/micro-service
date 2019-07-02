@@ -11,10 +11,14 @@ import org.springframework.web.bind.annotation.RequestMethod;
  * @author tangyifei
  * @since 2019-5-24 09:31:13
  */
-//@FeignClient(name = "FUKUN-STOCK", path = "fukun-stock", configuration = StockFeignConfig.class)
 @FeignClient(name = "FUKUN-STOCK", path = "fukun-stock", fallback = StockHystrix.class)
 public interface StockClient {
 
+    /**
+     * 扣减库存
+     *
+     * @return 影响的行数
+     */
     @RequestMapping(value = "/stocks", method = RequestMethod.POST)
     int reduceStock();
 }

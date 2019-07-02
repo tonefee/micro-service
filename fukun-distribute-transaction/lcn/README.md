@@ -1,13 +1,13 @@
 # LCN分布式事务
 ## 说明
-txlcn-tm-5.0.2.RELEASE.zip是最新版LCN5.0.2 版本的TM端 （事务协调器）的源码包，还包含编译号的jar包（jar包下载后使用压缩工具打开，修改相应配置，重新打包后缀为jar）即可直接运行。  
+txlcn-tm-5.0.2.RELEASE.zip是最新版LCN5.0.2 版本的TM端 （事务协调器）的源码包，还包含编译好的jar包（jar包下载后使用压缩工具打开，修改相应配置，重新打包后缀为jar）即可直接运行。  
 如果想在本地运行，解压tx-lcn-5.0.2.RELEASE.zip并导入到idea中，运行txlcn-tm这个项目。注意该项目中的依赖首先要装到本地，  
 并且必须提前安装并运行mysql、redis，执行步骤如下：  
 
 ## LCN 5.x使用
 ### 配置TM （5.0.2）
 #### 操作前准备
-需要redis和mysql（创建好表格）  
+需要redis和mysql 
 运行TM之前要先启动redis和mysql。  
 运行tx-manager.sql  
 

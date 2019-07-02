@@ -49,6 +49,7 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -67,6 +68,7 @@
         <dependency>
             <groupId>mysql</groupId>
             <artifactId>mysql-connector-java</artifactId>
+            <version>${mysql-connector}</version>
         </dependency>
 
         <dependency>
@@ -78,7 +80,7 @@
         <dependency>
             <groupId>com.alibaba</groupId>
             <artifactId>druid</artifactId>
-            <version>${druid-version}</version>
+            <version>${druid.version}</version>
         </dependency>
 
         <dependency>
@@ -115,38 +117,24 @@
         <dependency>
             <groupId>com.fasterxml.jackson.datatype</groupId>
             <artifactId>jackson-datatype-jsr310</artifactId>
+            <version>${jackson-datatype-jsr310.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>httpmime</artifactId>
+            <version>${httpmime.version}</version>
         </dependency>
 
-        <!-- https://mvnrepository.com/artifact/org.springframework.retry/spring-retry -->
         <dependency>
             <groupId>org.springframework.retry</groupId>
             <artifactId>spring-retry</artifactId>
+            <version>${spring-retry.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-amqp</artifactId>
         </dependency>
-
-        <!-- Feign实现声明式HTTP客户端 -->
-        <!-- <dependency>
-             <groupId>org.springframework.cloud</groupId>
-             <artifactId>spring-cloud-starter-feign</artifactId>
-             <exclusions>
-                 <exclusion>
-                     <groupId>org.springframework.cloud</groupId>
-                     <artifactId>spring-cloud-starter-ribbon</artifactId>
-                 </exclusion>
-                 <exclusion>
-                     <groupId>org.springframework.cloud</groupId>
-                     <artifactId>spring-cloud-commons</artifactId>
-                 </exclusion>
-             </exclusions>
-         </dependency>-->
 
         <dependency>
             <groupId>org.springframework.cloud</groupId>
@@ -322,12 +310,6 @@
             <groupId>com.codingapi.txlcn</groupId>
             <artifactId>txlcn-logger</artifactId>
             <version>${txlcn.version}</version>
-            <!-- <exclusions>
-                 <exclusion>
-                     <groupId>*</groupId>
-                     <artifactId>*</artifactId>
-                 </exclusion>
-             </exclusions>-->
         </dependency>
         <dependency>
             <groupId>com.codingapi.txlcn</groupId>
@@ -349,18 +331,6 @@
                     <groupId>*</groupId>
                     <artifactId>*</artifactId>
                 </exclusion>
-                <!-- <exclusion>
-                     <groupId>org.springframework.cloud</groupId>
-                     <artifactId>spring-cloud-commons</artifactId>
-                 </exclusion>
-                 <exclusion>
-                     <groupId>com.netflix.ribbon</groupId>
-                     <artifactId>ribbon-loadbalancer</artifactId>
-                 </exclusion>
-                 <exclusion>
-                     <groupId>com.netflix.feign</groupId>
-                     <artifactId>feign-core</artifactId>
-                 </exclusion>-->
             </exclusions>
         </dependency>
         <dependency>
@@ -376,16 +346,11 @@
         </dependency>
         <dependency>
             <groupId>org.springframework.cloud</groupId>
-            <artifactId>spring-cloud-starter-eureka</artifactId>
-            <version>${eureka.version}</version>
+            <artifactId>spring-cloud-starter-consul-discovery</artifactId>
             <exclusions>
                 <exclusion>
                     <groupId>org.springframework.cloud</groupId>
                     <artifactId>spring-cloud-starter-ribbon</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.netflix.ribbon</groupId>
-                    <artifactId>ribbon-eureka</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
