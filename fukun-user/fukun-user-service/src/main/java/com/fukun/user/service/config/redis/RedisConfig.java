@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.CachingConfigurerSupport;
 import org.springframework.cache.annotation.EnableCaching;
@@ -38,6 +39,7 @@ import javax.annotation.Resource;
  */
 @Configuration
 @EnableCaching
+@AutoConfigureAfter({RedisProperties.class})
 @Slf4j
 public class RedisConfig extends CachingConfigurerSupport {
 
