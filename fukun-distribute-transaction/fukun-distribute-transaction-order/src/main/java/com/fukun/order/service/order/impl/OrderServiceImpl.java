@@ -41,6 +41,9 @@ public class OrderServiceImpl extends BaseMySqlCrudServiceImpl<OrderPO, String> 
         // 比如代理类中的代码，有返回值的话会有类型强转操作将null转为Integer再转为int，
         // 转换实际执行代码为((Integer)null).intValue()，所以会报控制针。
         // 详情请查看https://ask.csdn.net/questions/648332   java动态代理报 空指针异常。
+        // 如果真的需要有返回值，不要在相关的服务层中（比如库存服务）使用 @ResponseResult 注解，
+        // 只有控制层中才能使用这个注解。
+        // 怎么使用呢？请参照fukun-user-service模块的相关的feign的调用书写规则。
         stockClient.reduceStock();
         String uuid = UUID.randomUUID().toString().replaceAll("-", "");
         orderPO.setId(uuid);
