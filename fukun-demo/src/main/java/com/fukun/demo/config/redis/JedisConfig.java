@@ -2,12 +2,10 @@ package com.fukun.demo.config.redis;
 
 import lombok.Getter;
 import lombok.Setter;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import redis.clients.jedis.JedisPool;
-import redis.clients.jedis.JedisPoolConfig;
+
+import javax.annotation.Resource;
 
 /**
  * jedis相关的配置
@@ -21,6 +19,8 @@ import redis.clients.jedis.JedisPoolConfig;
 @Setter
 public class JedisConfig {
 
+    private Integer database;
+
     private String host;
 
     private String password;
@@ -29,25 +29,11 @@ public class JedisConfig {
 
     private Integer port;
 
-    @Autowired
+    @Resource
     private Pool pool;
 
-    @Bean
-    public JedisPool jedisPool() {
-        return new JedisPool(jedisPoolConfig(), host, port, timeout, password);
-    }
-
-    @Bean
-    public JedisPoolConfig jedisPoolConfig() {
-        JedisPoolConfig jedisPoolConfig = new JedisPoolConfig();
-        jedisPoolConfig.setMaxTotal(pool.getMaxActive());
-        jedisPoolConfig.setMaxIdle(pool.getMaxIdle());
-        jedisPoolConfig.setMaxWaitMillis(pool.getMaxWait());
-        return jedisPoolConfig;
-    }
-
     @Configuration
-    @ConfigurationProperties(prefix = "spring.redis.pool")
+    @ConfigurationProperties(prefix = "spring.redis.jedis.pool")
     @Getter
     @Setter
     class Pool {
@@ -60,10 +46,21 @@ public class JedisConfig {
 
         private Integer maxWait;
 
+        private Boolean testOnCreate;
+
+        /**
+         * 在获取连接的时候检查有效性
+         */
         private Boolean testOnBorrow;
 
+        /**
+         * 当调用return Object方法时，是否进行有效性检查
+         */
         private Boolean testOnReturn;
 
+        /**
+         * 在空闲时检查有效性
+         */
         private Boolean testWhileIdle;
 
     }

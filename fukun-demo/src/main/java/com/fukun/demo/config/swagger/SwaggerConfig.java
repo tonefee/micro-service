@@ -62,6 +62,42 @@ public class SwaggerConfig {
                 .build();
     }
 
+    @Bean
+    public Docket demo4ApiDocket() {
+        return new Docket(DocumentationType.SWAGGER_12)
+                .enable(!EnvironmentEnum.isProdEnv(env))
+                .groupName("DEMO4")
+                .apiInfo(new ApiInfoBuilder().title("DEMO4").description("登录功能设计和如果利用Spring自定义参数解析器注入已登录用户信息等功能").build())
+                .select()
+                .apis(RequestHandlerSelectors.basePackage("com.fukun.demo.web.demo4"))
+                .paths(PathSelectors.any())
+                .build();
+    }
+
+    @Bean
+    public Docket demo5ApiDocket() {
+        return new Docket(DocumentationType.SWAGGER_12)
+                .enable(!EnvironmentEnum.isProdEnv(env))
+                .groupName("DEMO5")
+                .apiInfo(new ApiInfoBuilder().title("DEMO5").description("登录功能设计和如果利用Spring自定义参数解析器注入已登录用户信息等功能").build())
+                .select()
+                .apis(RequestHandlerSelectors.basePackage("com.fukun.demo.web.demo5"))
+                .paths(PathSelectors.any())
+                .build();
+    }
+
+    @Bean
+    public Docket demo6ApiDocket() {
+        return new Docket(DocumentationType.SWAGGER_12)
+                .enable(!EnvironmentEnum.isProdEnv(env))
+                .groupName("DEMO6")
+                .apiInfo(new ApiInfoBuilder().title("DEMO6").description("登录功能设计和如果利用Spring自定义参数解析器注入已登录用户信息等功能").build())
+                .select()
+                .apis(RequestHandlerSelectors.basePackage("com.fukun.demo.web.demo6"))
+                .paths(PathSelectors.any())
+                .build();
+    }
+
     private ApiInfo apiInfo() {
         return new ApiInfoBuilder()
                 .title("富坤集团API")

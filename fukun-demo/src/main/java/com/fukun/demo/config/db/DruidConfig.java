@@ -83,7 +83,7 @@ public class DruidConfig {
         configuration.setLazyLoadingEnabled(true);
         configuration.setMapUnderscoreToCamelCase(true);
         bean.setConfiguration(configuration);
-        bean.setTypeAliasesPackage("com.fukun.order.model.po");
+        bean.setTypeAliasesPackage("com.fukun.**.model.po");
         // 工程上默认使用的是Mybatis的DefaultVFS进行扫描，
         // 但是在SpringBoot的环境下，Mybatis的DefaultVFS这个扫包会出现问题，所以只能修改VFS
         bean.setVfs(SpringBootVFS.class);

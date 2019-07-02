@@ -9,7 +9,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.validator.constraints.Length;
-import org.hibernate.validator.constraints.NotBlank;
+
+import javax.validation.constraints.NotBlank;
 
 /**
  * 登录凭证
@@ -37,7 +38,7 @@ public class LoginCredentialQO {
     private String userId;
 
     @ApiModelProperty(value = "账号类型", example = "1")
-    @EnumValue(enumClass = LoginCredential.TypeEnum.class, enumMethod = "isValidName")
+    @EnumValue(enumClass = LoginCredential.LoginCredentialTypeEnum.class, enumMethod = "isValidName")
     private String type;
 
 }

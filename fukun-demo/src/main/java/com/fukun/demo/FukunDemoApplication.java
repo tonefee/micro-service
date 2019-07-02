@@ -6,7 +6,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.amqp.RabbitAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.web.servlet.ServletComponentScan;
-import org.springframework.cloud.netflix.feign.EnableFeignClients;
+import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
+import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.retry.annotation.EnableRetry;
 
 @EnableRetry
@@ -14,7 +15,7 @@ import org.springframework.retry.annotation.EnableRetry;
 @EnableAutoConfiguration(exclude = {DataSourceAutoConfiguration.class, RabbitAutoConfiguration.class})
 @EnableFeignClients(basePackages = {"com.fukun.user.**.client"})
 @ServletComponentScan
-//@EnableEurekaClient
+@EnableDiscoveryClient
 public class FukunDemoApplication {
 
     public static void main(String[] args) {

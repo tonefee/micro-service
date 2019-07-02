@@ -2,7 +2,6 @@ package com.fukun.demo.config.mybatis;
 
 import com.fukun.commons.dao.CrudMapper;
 import com.fukun.demo.config.db.DruidConfig;
-import org.mybatis.spring.annotation.MapperScan;
 import org.mybatis.spring.boot.autoconfigure.MybatisAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.context.annotation.Bean;
@@ -19,7 +18,6 @@ import java.util.Properties;
  */
 @Configuration
 @AutoConfigureAfter({MybatisAutoConfiguration.class, DruidConfig.class})
-@MapperScan(basePackages = {"com.fukun.demo.mapper", "com.fukun.commons.attributes.mapper"})
 public class MyBatisConfig {
 
     @Bean
