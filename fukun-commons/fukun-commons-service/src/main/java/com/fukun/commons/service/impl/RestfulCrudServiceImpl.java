@@ -11,7 +11,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
 import java.util.List;
@@ -59,7 +58,7 @@ public class RestfulCrudServiceImpl<E extends PO<PK>, PK> extends BaseMySqlCrudS
     }
 
     @Override
-    public List<E> getByIds(@RequestParam("id") Set<PK> ids) {
+    public List<E> getByIds(@RequestBody Set<PK> ids) {
         return super.selectByPks(ids);
     }
 

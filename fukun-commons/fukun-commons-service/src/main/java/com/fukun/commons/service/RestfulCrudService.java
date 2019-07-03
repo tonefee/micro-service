@@ -69,8 +69,8 @@ public interface RestfulCrudService<E, PK> {
      * @param ids 主键列表
      * @return 多个对象
      */
-    @GetMapping(params = {"id"})
-    List<E> getByIds(@RequestParam("id") Set<PK> ids);
+    @PostMapping("_ids")
+    List<E> getByIds(@RequestBody Set<PK> ids);
 
     /**
      * restful风格的分页查询操作

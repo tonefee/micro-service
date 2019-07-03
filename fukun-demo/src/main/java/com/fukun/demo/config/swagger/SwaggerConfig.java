@@ -98,6 +98,18 @@ public class SwaggerConfig {
                 .build();
     }
 
+    @Bean
+    public Docket demo7ApiDocket() {
+        return new Docket(DocumentationType.SWAGGER_12)
+                .enable(!EnvironmentEnum.isProdEnv(env))
+                .groupName("DEMO7")
+                .apiInfo(new ApiInfoBuilder().title("DEMO7").description("线程池的使用").build())
+                .select()
+                .apis(RequestHandlerSelectors.basePackage("com.fukun.demo.web.demo7"))
+                .paths(PathSelectors.any())
+                .build();
+    }
+
     private ApiInfo apiInfo() {
         return new ApiInfoBuilder()
                 .title("富坤集团API")
