@@ -37,6 +37,7 @@
         <commons.codec.version>1.10</commons.codec.version>
         <redis.clients.version>2.9.0</redis.clients.version>
         <springfox-swagger-ui.version>2.8.0</springfox-swagger-ui.version>
+        <swagger-models.version>1.5.21</swagger-models.version>
         <mybatis.typehandlers.jsr310.version>1.0.0</mybatis.typehandlers.jsr310.version>
         <persistence.api.version>1.0</persistence.api.version>
         <guava.version>18.0</guava.version>
