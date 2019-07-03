@@ -376,6 +376,13 @@ fukun-user-token<br/>
 fukun-commons-web<br/>
 fukun-user-client<br/>
 fukun-user-service<br/>
+到maven远程仓库查看对应的spring-boot与spring-cloud的版本。  
+spring-cloud-dependencies 版本列表可查看：      
+[spring-boot的最新版本查看](https://mvnrepository.com/artifact/org.springframework.cloud/spring-cloud-dependencies)  
+spring-boot-starter-parent 版本列表可查看：     
+[spring-cloud的最新版本查看](https://mvnrepository.com/artifact/org.springframework.boot/spring-boot-starter-parent)  
+
+
 
 
 
