@@ -1,0 +1,20 @@
+spring:
+  # 登陆所需的账号密码
+  security:
+        user:
+          name: tangyifei
+          password: 123456
+  boot:
+    admin:
+       discovery:
+          ignored-services: consul
+       client:
+             # 便于客户端可以在受保护的服务器上注册api
+             username: ${spring.security.user.name}
+             password: ${spring.security.user.password}
+            # 便服务器可以访问受保护的客户端端点
+             instance:
+                  metadata:
+                       user:
+                           name: ${spring.security.user.name}
+                           password: ${spring.security.user.password}

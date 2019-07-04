@@ -1,0 +1,89 @@
+spring:
+  profiles:
+    active: prod
+  application:
+     name: fukun-core-admin-server
+  main:
+    allow-bean-definition-overriding: true
+
+  boot:
+      admin:
+        ui:
+          title: 微服务监控
+        #配置邮件监控
+#        notify:
+#              mail:
+#                  #接收邮件的邮箱
+#                  to: 15062230055@163.com
+#                  enabled: true
+#                  #template: "classpath:/META-INF/spring-boot-admin-server/mail/status-changed.html"   --邮件模板
+#                  #发送邮件的邮箱
+#                  from: 1191707748@qq.com
+#                  #从任何状态到up状态都不要发邮件通知
+#                  ignore-changes: "*:UP"
+        # 便于客户端可以在受保护的服务器上注册api
+        client:
+           url: http://${spring.cloud.client.ip-address}:${server.port}
+           instance:
+              prefer-ip: true
+
+#  mail:
+#      host: smtp.qq.com
+#      username: 1191707748@qq.com
+#      password: "bqmixuorgmfzgeeg"
+#      properties:
+#        mail:
+#          smtp:
+#            auth: true
+#            starttls:
+#              enable: true
+#              required: true
+  cloud:
+     consul:
+        host: localhost
+        port: 8500
+        discovery:
+          enabled: true
+          register: true
+          tags:  management.context-path=/, health.path=/health, user.name=tangyifei, user.password=123456
+          serviceName: ${spring.application.name}
+          hostname: ${spring.application.name}
+          port: ${server.port}
+          instanceId: ${spring.application.name}:${server.port}
+          preferIpAddress: true
+          healthCheckInterval: 10s
+          healthCheckUrl: http://${spring.cloud.client.ip-address}:${server.port}/health
+          heartbeat:
+             enabled: true
+
+server:
+ port: 8884
+
+# Spring Boot2.x中，默认只开放了info、health两个端点，剩余的需要自己通过配置management.endpoints.web.exposure.include属性来加载
+# 这个management.endpoints.web.base-path属性比较重要，因为Spring Boot2.x后每个端点默认的路径是/actuator/endpointId这样一来Spring Boot Admin是无法正常采集的
+management:
+   endpoints:
+     web:
+       exposure:
+         include: "*"
+       #  比较重要,默认 /actuator spring-boot-admin 扫描不到
+       base-path: /
+       path-mapping:
+         health: /health
+
+   endpoint:
+       health:
+         show-details: ALWAYS
+
+# 描述信息
+info:
+   blog-url: http://blog.battcn.com
+   author: tangyifei
+   # 如果 Maven 插件没配置此处请注释掉
+   version: @project.version@
+   name: @project.artifactId@
+
+# 日志文件
+logging.file: ./target/admin-server.log
+
+

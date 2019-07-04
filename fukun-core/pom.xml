@@ -16,6 +16,7 @@
         <module>fukun-core-zuul</module>
         <module>fukun-core-gateway</module>
         <module>fukun-core-config</module>
+        <module>fukun-core-admin</module>
     </modules>
 
     <properties>
