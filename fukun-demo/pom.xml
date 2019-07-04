@@ -163,6 +163,8 @@
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <version>${lombok.version}</version>
+            <!--排除依赖，配置可选依赖，比如a依赖与b，b依赖于c，b中配置c的依赖时，使用了optional，那么a就不会依赖于c-->
+            <optional>true</optional>
             <!--编译测试阶段提供该jar包，运行阶段由目标容器提供-->
             <scope>provided</scope>
         </dependency>

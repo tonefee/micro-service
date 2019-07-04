@@ -74,6 +74,13 @@
             <groupId>io.swagger</groupId>
             <artifactId>swagger-annotations</artifactId>
         </dependency>
+
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <!--编译测试阶段提供该jar包，运行阶段由目标容器提供-->
+            <scope>provided</scope>
+        </dependency>
     </dependencies>
 
     <build>

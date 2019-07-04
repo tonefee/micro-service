@@ -110,6 +110,18 @@ public class SwaggerConfig {
                 .build();
     }
 
+    @Bean
+    public Docket demo8ApiDocket() {
+        return new Docket(DocumentationType.SWAGGER_12)
+                .enable(!EnvironmentEnum.isProdEnv(env))
+                .groupName("DEMO8")
+                .apiInfo(new ApiInfoBuilder().title("DEMO8").description("使用hystrix实现不同业务的线程池的隔离").build())
+                .select()
+                .apis(RequestHandlerSelectors.basePackage("com.fukun.demo.web.demo8"))
+                .paths(PathSelectors.any())
+                .build();
+    }
+
     private ApiInfo apiInfo() {
         return new ApiInfoBuilder()
                 .title("富坤集团API")
