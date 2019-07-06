@@ -1,0 +1,133 @@
+spring:
+  profiles:
+    active: dev
+  application:
+     name: fukun-message-queue-rabbitmq-producer
+  rabbitmq:
+     addresses: 115.159.201.120:5672
+     host: 115.159.201.120
+     port: 5672
+     username: guest
+     password: guest
+     virtual-host: /
+     connection-timeout: 15000
+     #消息发送到交换机确认机制,是否确认回调
+     publisher-confirms: true
+     #消息发送到交换机确认机制,是否返回回馈
+     publisher-returns: true
+#     template.mandatory: true
+#     listener:
+#       simple:
+#         # 手动应答
+#         acknowledge-mode: manual
+#         auto-startup: true
+#         # 不重回队列
+#         default-requeue-rejected: false
+#         concurrency: 5
+#         max-concurrency: 20
+#         #  每次只处理一个信息
+#         prefetch: 1
+#         retry:
+#           enabled: false
+  http:
+    encoding:
+      charset: UTF-8
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: GMT+8
+    default-property-inclusion: NON_NULL
+
+  datasource:
+    type: com.alibaba.druid.pool.DruidDataSource
+    url: jdbc:mysql://localhost:3306/fukun?characterEncoding=UTF-8&autoReconnect=true&zeroDateTimeBehavior=convertToNull&useUnicode=true
+    driver-class-name: com.mysql.jdbc.Driver
+    username: root
+    password: root
+
+  main:
+    allow-bean-definition-overriding: true
+
+### REDIS CONFIG
+  redis:
+    database: 0
+    host: 192.168.0.52
+    password: wd123
+    port: 6379
+    timeout: 6000
+    jedis:
+      pool:
+        max-idle: 50
+        min-idle: 8
+        max-active: 500
+        max-wait: 5
+        test-on-create: false
+        test-on-borrow: true
+        test-on-return: false
+        test-while-idle: true
+
+server:
+ port: 8001
+
+mybatis:
+  type-aliases-package: com.fukun.rabbitmq.model
+  mapper-locations: classpath:mapping/*.xml
+
+logging.level.tk.mybatis: TRACE
+
+### ThreadPoolConfig
+thread:
+   pool:
+     core-size: 5
+     max-size: 5
+     active-time: 0
+     block-queue-size: 5
+
+druid:
+#   #连接池启动时要初始化多少个连接，即使客户端这是没有需求，也会初始化空闲连接
+   initialSize: 5
+#   #如果客户端一段时间内不需要使用连接，如果一直把所有连接池中的所有连接都维持在活动状态是很浪费资源的，如果客户端没有需求，那么最多维持maxIdle个空闲连接。
+#   maxIdle:
+#   #即使客户端没有需求，也要至少维持多少个空闲连接，以应对客户端的突发需求。
+   minIdle: 10
+#   #配置连接池同时能维持的最大连接数，如果客户端理论上需要100个连接，则这个值设为100。
+   maxActive: 300
+#   #配置获取连接等待超时的时间，连接池出借连接的最长期限，单位是毫秒，比如设为60000ms，客户端从连接池获取（借出）一个连接后，60000毫秒没有归还（return），则连接池会抛出异常。
+#   maxWait: 60000
+#   #连接池中一个连接的寿命，连接池初始化一个连接后，会记下初始化的时间，以后每次出借，或有客户端归还这个连接时，连接池会检查 当前时间 - 初始化时间 > maxAge，如果超过maxAge，连接池会删除这个连接
+#   maxAge:
+
+### 下面为连接的检查选项
+#   #mysql5以后，如果连接长时间不活动 (34,247,052 ms≈ 9.5 小时)，mysql数据库会断开连接，这会导致异常，MySQLNonTransientConnectionException: No operations allowed after connection closed，以下选项将会告诉连接池，主动检查连接可用性，避免这个异常发生。
+#   #配置间隔多久才进行一次检测，检测需要关闭的空闲连接，单位是毫秒
+   timeBetweenEvictionRunsMillis: 60000
+#   #配置一个连接在池中最小生存的时间，单位是毫秒
+   minEvictableIdleTimeMillis: 300000
+#   #检查连接可用性的语句，一般来说mysql设置成SELECT 1, oracle设置成select 1 from dual，在检查连接可用性时，连接池会执行这些语句，如果返回结果不为空，则说明连接可用
+   validationQuery: SELECT 1 FROM DUAL
+#   #执行连接检查语句时的超时时间
+#   validationQueryTimeout:
+
+##### 告诉连接池在何时检查连接有效性
+#   #在连接初始化时执行连接可用性检查
+#   testOnConnect:
+#   #在检查闲置连接时同时检查连接可用性
+   testWhileIdle: true
+#   #在借出连接时检查连接可用性
+   testOnBorrow: false
+#   #在客户端归还连接时检查连接可用性
+   testOnReturn: false
+#   #打开PSCache，并且指定每个连接上PSCache的大小
+   poolPreparedStatements: true
+   maxPoolPreparedStatementPerConnectionSize: 20
+#   #配置监控统计拦截的filters，去掉后监控界面sql无法统计，'wall'用于防火墙
+   filters: stat,wall,log4j
+#   #通过connectProperties属性来打开mergeSql功能；慢SQL记录
+   connectionProperties: druid.stat.mergeSql=true;druid.stat.slowSqlMillis=5000
+#   #合并多个DruidDataSource的监控数据
+   useGlobalDataSourceStat: true
+
+
+
+
+
+

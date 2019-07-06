@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.fukun.rabbitmq.mapper.OrderMapper">
+
+    <insert id="insert" parameterType="com.fukun.rabbitmq.model.Order">
+        INSERT INTO
+        t_order
+        (
+        id,
+        name,
+        message_id
+        )
+        VALUES
+        (
+        #{id},
+        #{name, jdbcType = VARCHAR},
+        #{messageId, jdbcType = VARCHAR}
+        )
+    </insert>
+
+</mapper>

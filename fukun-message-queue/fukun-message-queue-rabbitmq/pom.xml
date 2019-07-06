@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>com.fukun</groupId>
+    <artifactId>fukun-message-queue-rabbitmq</artifactId>
+    <version>${parent.version}</version>
+    <packaging>pom</packaging>
+    <name>fukun-message-queue-rabbitmq</name>
+    <description>fukun-message-queue-rabbitmq</description>
+
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>2.1.6.RELEASE</version>
+    </parent>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <parent.version>1.0.0-SNAPSHOT</parent.version>
+        <lombok.version>1.16.18</lombok.version>
+        <mybatis-spring-boot.version>1.1.1</mybatis-spring-boot.version>
+        <mapper-spring-boot.version>1.1.0</mapper-spring-boot.version>
+        <druid.version>1.1.10</druid.version>
+        <mybatis-paginator.version>1.2.17</mybatis-paginator.version>
+        <mysql-connector.version>5.1.47</mysql-connector.version>
+        <javax.servlet-api.version>4.0.1</javax.servlet-api.version>
+        <commons-io.version>2.4</commons-io.version>
+        <commons.lang3.version>3.5</commons.lang3.version>
+        <fastjson.version>1.1.26</fastjson.version>
+        <log4j.version>1.2.17</log4j.version>
+        <google.guava.version>25.1-jre</google.guava.version>
+        <swagger.version>1.5.18</swagger.version>
+        <springfox.version>2.9.2</springfox.version>
+        <swagger-models.version>1.5.21</swagger-models.version>
+        <springfox-swagger-ui.version>2.8.0</springfox-swagger-ui.version>
+        <redis.clients.version>2.9.0</redis.clients.version>
+        <gson.version>2.8.5</gson.version>
+        <java.version>1.8</java.version>
+        <maven.compiler.source>${java.version}</maven.compiler.source>
+        <maven.compiler.target>${java.version}</maven.compiler.target>
+        <maven.compiler.compilerVersion>${java.version}</maven.compiler.compilerVersion>
+    </properties>
+
+    <modules>
+        <module>fukun-message-queue-rabbitmq-producer</module>
+        <module>fukun-message-queue-rabbitmq-consumer</module>
+    </modules>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-dependencies</artifactId>
+                <version>Greenwich.RELEASE</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+</project>

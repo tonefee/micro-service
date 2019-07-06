@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.fukun.rabbitmq.mapper.BrokerMessageLogMapper">
+
+    <select id="query4StatusAndTimeoutMessage" resultType="com.fukun.rabbitmq.model.BrokerMessageLog">
+          <![CDATA[
+
+          select message_id, message, try_count, status, next_retry, create_time, update_time
+              from broker_message_log bml
+              where status = '0'
+              and next_retry <= sysdate()
+
+        ]]>
+    </select>
+
+    <update id="update4ReSend">
+    update broker_message_log bml
+    set bml.try_count = bml.try_count + 1,
+      bml.update_time = #{updateTime, jdbcType=TIMESTAMP}
+    where bml.message_id = #{messageId,jdbcType=VARCHAR}
+  </update>
+
+    <update id="changeBrokerMessageLogStatus">
+    update broker_message_log bml
+    set bml.status = #{status,jdbcType=VARCHAR},
+          bml.update_time = #{updateTime, jdbcType=TIMESTAMP}
+    where bml.message_id = #{messageId,jdbcType=VARCHAR}
+  </update>
+
+    <insert id="insert" parameterType="com.fukun.rabbitmq.model.BrokerMessageLog">
+        INSERT INTO
+        broker_message_log
+        (
+        message_id,
+        message,
+        try_count,
+        status,
+        next_retry,
+        create_time,
+        update_time
+        )
+        VALUES
+        (
+        #{messageId},
+        #{message},
+        #{tryCount},
+        #{status},
+        #{nextRetry},
+        #{createTime},
+        #{updateTime}
+        )
+    </insert>
+</mapper>
