@@ -43,7 +43,7 @@ public class RabbitMqController extends BaseCallBack {
     }
 
     /**
-     * 保存order , 发送订单消息到消息队列，同时需要向库存服务发送通知减库存
+     * 保存 order , 发送订单消息到消息队列，同时需要向库存服务发送通知减库存
      *
      * @param order 订单实体
      * @return 返回结果

@@ -9,6 +9,9 @@ import org.springframework.amqp.rabbit.connection.CorrelationData;
 import javax.annotation.Resource;
 import java.util.Date;
 
+import static com.fukun.rabbitmq.constant.Constants.MAX_TRY_COUNT;
+import static com.fukun.rabbitmq.constant.Constants.MAX_TRY_COUNT_PREFIX_KEY;
+
 /**
  * 消息发送到交换机确认机制
  * 如果设置了消息持久化，那么ack=true是在消息持久化完成后，就是存到硬盘上之后再发送的，
@@ -45,33 +48,43 @@ public class MsgSendConfirmCallBack extends BaseCallBack {
             if (log.isInfoEnabled()) {
                 log.info("消息发送确认成功（消息发送到exchange成功）！");
             }
-            //如果confirm返回成功 则进行更新消息记录的状态
             brokerMessageLogMapper.changeBrokerMessageLogStatus(correlationData.getId(), Constants.ORDER_SEND_SUCCESS, new Date());
             try {
+                // 如果消息发送到交换机成功，那么就清除缓存中的msgId 与 Message 的对应关系数据
                 redisHandler.del(correlationData.getId());
+                redisHandler.del(MAX_TRY_COUNT_PREFIX_KEY + correlationData.getId());
             } catch (Exception e) {
                 if (log.isInfoEnabled()) {
                     log.error("缓存错误；{}", e);
                 }
             }
         } else {
+            // 如果消息发送到交换机失败，进行相关的重发机制（定时重发等机制）
             if (log.isInfoEnabled()) {
                 log.error("消息发送确认失败（消息发送到exchange失败）：{}", cause);
             }
-            Object cacheKey = null;
-            try {
-                cacheKey = redisHandler.get(correlationData.getId());
-            } catch (Exception e) {
-                if (log.isInfoEnabled()) {
-                    log.error("缓存错误；{}", e);
-                }
+            int retryCount = (int) redisHandler.get(MAX_TRY_COUNT_PREFIX_KEY + correlationData.getId());
+            if (log.isInfoEnabled()) {
+                log.error("消息的重试次数：{}", retryCount);
             }
-            if (null != cacheKey) {
-                Message message = (Message) cacheKey;
-                // 重新发送消息
-                rabbitTemplate.convertAndSend(Constants.TOPIC_EXCHANGE_NAME, Constants.OBJECT_ROUTING_KEY,
-                        message, correlationData);
-
+            // 如果重试次数大于小于3次，重新发送
+            if (retryCount < MAX_TRY_COUNT) {
+                // 增加重试次数
+                redisHandler.incr(MAX_TRY_COUNT_PREFIX_KEY + correlationData.getId(), 1);
+                Object cacheKey = null;
+                try {
+                    cacheKey = redisHandler.get(correlationData.getId());
+                } catch (Exception e) {
+                    if (log.isInfoEnabled()) {
+                        log.error("缓存错误；{}", e);
+                    }
+                }
+                if (null != cacheKey) {
+                    Message message = (Message) cacheKey;
+                    // 重新发送消息
+                    rabbitTemplate.convertAndSend(Constants.TOPIC_EXCHANGE_NAME, Constants.OBJECT_ROUTING_KEY,
+                            message, correlationData);
+                }
             }
         }
     }

@@ -28,6 +28,16 @@ public final class Constants {
      */
     public static final int ORDER_TIMEOUT = 1;
 
+    /**
+     * 最大重发次数
+     */
+    public final static int MAX_TRY_COUNT = 3;
+
+    /**
+     * 最大重发次数相关的key
+     */
+    public final static String MAX_TRY_COUNT_PREFIX_KEY = "retry:";
+
     /*********************************** 消息队列常量开始 **************************/
     /**
      * topic 类型的交换机的名字
@@ -70,7 +80,7 @@ public final class Constants {
     public static final String DIRECT_ROUTING_KEY = "direct.queue";
 
     public final static String BASIC_ROUTING_KEY = "topic.queue.basic.1";
-    
+
     public final static String OBJECT_ROUTING_KEY = "topic.queue.object.order";
     /*********************************** 消息队列常量结束 **************************/
 }

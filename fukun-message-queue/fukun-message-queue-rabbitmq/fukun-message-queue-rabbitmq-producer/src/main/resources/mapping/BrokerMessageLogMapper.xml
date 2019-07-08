@@ -4,15 +4,20 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.fukun.rabbitmq.mapper.BrokerMessageLogMapper">
 
-    <select id="query4StatusAndTimeoutMessage" resultType="com.fukun.rabbitmq.model.BrokerMessageLog">
-          <![CDATA[
+    <resultMap id="BrokerMessageLogResultMap" type="com.fukun.rabbitmq.model.BrokerMessageLog">
+        <id property="messageId" column="message_id"/>
+        <result property="message" column="message"/>
+        <result property="tryCount" column="try_count"/>
+        <result property="status" column="status"/>
+        <result property="nextRetry" column="next_retry"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
 
-          select message_id, message, try_count, status, next_retry, create_time, update_time
-              from broker_message_log bml
-              where status = '0'
-              and next_retry <= sysdate()
-
-        ]]>
+    <select id="query4StatusAndTimeoutMessage" resultMap="BrokerMessageLogResultMap">
+          SELECT message_id, message, try_count, status, next_retry, create_time, update_time
+            FROM broker_message_log bml
+            WHERE status = '0' AND next_retry &lt;= sysdate()
     </select>
 
     <update id="update4ReSend">
@@ -35,7 +40,6 @@
         (
         message_id,
         message,
-        try_count,
         status,
         next_retry,
         create_time,
@@ -45,7 +49,6 @@
         (
         #{messageId},
         #{message},
-        #{tryCount},
         #{status},
         #{nextRetry},
         #{createTime},

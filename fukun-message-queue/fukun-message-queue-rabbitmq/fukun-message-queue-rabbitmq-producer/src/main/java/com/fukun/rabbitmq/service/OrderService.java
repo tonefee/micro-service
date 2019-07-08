@@ -22,6 +22,8 @@ import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
 
+import static com.fukun.rabbitmq.constant.Constants.MAX_TRY_COUNT_PREFIX_KEY;
+
 /**
  * 订单的业务逻辑
  *
@@ -65,7 +67,6 @@ public class OrderService extends BaseCallBack {
         brokerMessageLog.setCreateTime(new Date());
         brokerMessageLog.setUpdateTime(new Date());
         brokerMessageLogMapper.insert(brokerMessageLog);
-
         // 发送消息
         sendOrderMessage(order);
     }
@@ -87,10 +88,10 @@ public class OrderService extends BaseCallBack {
                 .setContentType(MessageProperties.CONTENT_TYPE_JSON).setCorrelationId(msgId).build();
         // 将 msgId和 CorrelationData绑定
         CorrelationData correlationData = new CorrelationData(msgId);
-        // TODO 将 msgId 与 Message 的关系保存起来
         // 将 msgId 与 Message 的关系保存起来,例如放到缓存中.
         try {
             redisHandler.set(msgId, gson.fromJson(gson.toJson(message), Map.class));
+            redisHandler.set(MAX_TRY_COUNT_PREFIX_KEY + msgId, 0);
         } catch (Exception e) {
             if (log.isInfoEnabled()) {
                 log.error("缓存错误：{}", e);
@@ -105,7 +106,7 @@ public class OrderService extends BaseCallBack {
         rabbitTemplate.convertAndSend(Constants.TOPIC_EXCHANGE_NAME, Constants.OBJECT_ROUTING_KEY,
                 message, correlationData);
         if (log.isInfoEnabled()) {
-            log.info("发送的经过编码的消息是：{}", message);
+            log.info("订单相关的消息发送完成，消息的id是: {}，发送的经过编码的消息是：{}，等待mq发送确认消息。", msgId, message);
         }
     }
 }

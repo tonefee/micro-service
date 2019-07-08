@@ -32,8 +32,7 @@ public class MsgSendReturnCallback extends BaseCallBack {
             log.info("MsgSendReturnCallback [消息从交换机到队列失败]  message：{}", message);
             log.info("send message failed: replyCode：{}，replyText：{}", replyCode, replyText);
         }
-        // TODO 消息从交换机到队列失败，重新发送
-        // 重新发送消息
+        // 重新发送消息，可以使用定时机制重发消息等
         rabbitTemplate.convertAndSend(Constants.TOPIC_EXCHANGE_NAME, Constants.OBJECT_ROUTING_KEY, message);
         // rabbitTemplate.send(message);
     }

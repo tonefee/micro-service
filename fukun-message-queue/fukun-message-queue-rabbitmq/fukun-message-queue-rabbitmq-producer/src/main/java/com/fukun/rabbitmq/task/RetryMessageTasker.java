@@ -15,6 +15,8 @@ import javax.annotation.Resource;
 import java.util.Date;
 import java.util.List;
 
+import static com.fukun.rabbitmq.constant.Constants.MAX_TRY_COUNT;
+
 /**
  * 消息重试，最大努力尝试策略（定时任务）
  *
@@ -25,8 +27,6 @@ import java.util.List;
 @Slf4j
 public class RetryMessageTasker {
 
-    private final static int MAX_TRY_COUNT = 3;
-
     @Resource
     private OrderService orderService;
 
@@ -35,15 +35,22 @@ public class RetryMessageTasker {
 
     @Scheduled(initialDelay = 5000, fixedDelay = 10000)
     public void reSend() {
-        //pull status = 0 and timeout message
+        if (log.isInfoEnabled()) {
+            log.info("定时重发开始！");
+        }
+        // 获取数据库中状态为发送中并且超时的消息列表
         List<BrokerMessageLog> list = brokerMessageLogMapper.query4StatusAndTimeoutMessage();
         if (CollectionUtil.isNotEmpty(list)) {
             list.forEach(messageLog -> {
+                if (log.isInfoEnabled()) {
+                    log.info("重发次数：{}", messageLog.getTryCount());
+                }
+                // 如果重试次数大于等于3次，就表示该消息彻底的发送失败了
                 if (messageLog.getTryCount() >= MAX_TRY_COUNT) {
-                    //update fail message
+                    // 更新消息的状态为发送失败
                     brokerMessageLogMapper.changeBrokerMessageLogStatus(messageLog.getMessageId(), Constants.ORDER_SEND_FAILURE, new Date());
                 } else {
-                    // resend
+                    // 更新消息的重发次数与更新时间
                     brokerMessageLogMapper.update4ReSend(messageLog.getMessageId(), new Date());
                     Order reSendOrder = JSON.parseObject(messageLog.getMessage(), Order.class);
                     try {
