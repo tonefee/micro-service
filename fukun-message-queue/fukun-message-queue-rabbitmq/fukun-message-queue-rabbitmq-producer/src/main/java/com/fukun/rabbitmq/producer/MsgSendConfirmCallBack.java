@@ -67,7 +67,7 @@ public class MsgSendConfirmCallBack extends BaseCallBack {
             if (log.isInfoEnabled()) {
                 log.error("消息的重试次数：{}", retryCount);
             }
-            // 如果重试次数大于小于3次，重新发送
+            // 如果重试次数大于小于3次，重新发送，大于最大重试次数还是失败，则可以通过人工进行干预。
             if (retryCount < MAX_TRY_COUNT) {
                 // 增加重试次数
                 redisHandler.incr(MAX_TRY_COUNT_PREFIX_KEY + correlationData.getId(), 1);

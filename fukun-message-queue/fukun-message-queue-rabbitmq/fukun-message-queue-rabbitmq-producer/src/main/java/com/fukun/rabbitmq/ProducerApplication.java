@@ -3,7 +3,6 @@ package com.fukun.rabbitmq;
 import com.fukun.rabbitmq.initial.ApplicationStartup;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
  * 消息生产端
@@ -12,7 +11,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
  * @since 2019年7月5日14:01:59
  */
 @SpringBootApplication
-@EnableScheduling
+//@EnableScheduling
 public class ProducerApplication {
 
     public static void main(String[] args) {

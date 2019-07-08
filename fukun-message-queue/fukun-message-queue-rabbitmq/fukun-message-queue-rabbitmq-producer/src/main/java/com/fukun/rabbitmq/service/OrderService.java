@@ -67,6 +67,7 @@ public class OrderService extends BaseCallBack {
         brokerMessageLog.setCreateTime(new Date());
         brokerMessageLog.setUpdateTime(new Date());
         brokerMessageLogMapper.insert(brokerMessageLog);
+        redisHandler.set(MAX_TRY_COUNT_PREFIX_KEY + msgId, 0);
         // 发送消息
         sendOrderMessage(order);
     }
@@ -91,7 +92,6 @@ public class OrderService extends BaseCallBack {
         // 将 msgId 与 Message 的关系保存起来,例如放到缓存中.
         try {
             redisHandler.set(msgId, gson.fromJson(gson.toJson(message), Map.class));
-            redisHandler.set(MAX_TRY_COUNT_PREFIX_KEY + msgId, 0);
         } catch (Exception e) {
             if (log.isInfoEnabled()) {
                 log.error("缓存错误：{}", e);

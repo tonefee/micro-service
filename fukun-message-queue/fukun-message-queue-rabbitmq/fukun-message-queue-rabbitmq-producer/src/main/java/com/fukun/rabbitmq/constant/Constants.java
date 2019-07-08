@@ -42,7 +42,7 @@ public final class Constants {
     /**
      * topic 类型的交换机的名字
      */
-    public final static String TOPIC_EXCHANGE_NAME = "amq.topic";
+    public final static String TOPIC_EXCHANGE_NAME = "topic.order";
 
     /**
      * direct 类型的交换机的名字
