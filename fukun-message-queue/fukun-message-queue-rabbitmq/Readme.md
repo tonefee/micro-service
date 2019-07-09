@@ -1316,6 +1316,60 @@ public class RabbitMqConsumer {
 
 ![可靠消息投递](pictures/p18.png)   
 
+### 解决消息的积压问题
+
+#### 消息堆积在什么业务场景情况下会出现
+1、消息发送的速率远远大于消息消费的速率。  
+在实际应用场景中什么情况下消息发送的速率远远大于消息消费的速率，
+比如某个时间段消费端处理消息异常缓慢（发送消息只要3秒钟，而消费消息需要1分钟左右才能处理一个消息，
+每分钟发送20个消息，只能有一个消息被消费端处理，这样队列中就会产生大量的消息堆积）。  
+
+#### 如何优化消费端处理缓慢造成的消息堆积问题  
+默认情况下，`rabbitmq消费者为单线程串行消费`，这也是队列的特性。源码在org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer中可见： 
+ 
+![可靠消息投递](pictures/p24.png)   
+
+当消费端处理缓慢造成的消息堆积就可以通过设置并发消费提高消费的速率，从而减少消息堆积的问题。  
+
+#### 设置并发消费两个关键属性concurrentConsumers和prefetchCount
+concurrentConsumers设置的是对每个listener在初始化的时候设置的并发消费者的个数，
+prefetchCount 是每次一次性从broker里面取的待消费的消息的个数，
+从源码中分析org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer：
+启动的时候会根据设置的concurrentConsumers创建N个BlockingQueueConsumer（N个消费者）。  
+prefetchCount是BlockingQueueConsumer内部维护的一个阻塞队列LinkedBlockingQueue的大小，其作用就是如果某个消费者队列阻塞，
+就无法接收新的消息，该消息会发送到其它未阻塞的消费者。  
+
+假设prefetch值设为10，共有两个consumer。意味着每个consumer每次会从queue中预抓取 10 条消息到本地缓存着等待消费。
+同时该channel的unacked数变为20。而Rabbit投递的顺序是，先为consumer1投递满10个message，再往consumer2投递10个message。
+如果这时有新message需要投递，先判断channel的unacked数是否等于20，如果是则不会将消息投递到consumer中，message继续呆在queue中。
+之后其中consumer对一条消息进行ack，unacked此时等于19，Rabbit就判断哪个consumer的unacked少于10，就投递到哪个consumer中。  
+
+总的来说，consumer负责不断处理消息，不断ack，然后只要unacked数少于prefetch * consumer数目，broker就不断将消息投递过去。  
+
+prefetch并不是说设置得越大越好。过大可能导致consumer处理不过来，一直在本地缓存的BlockingQueue里呆太久，这样消息在客户端的延迟就大大增加；
+而对于多个consumer的情况，则会分配不均匀，导致有些consumer一直在忙，有些则非常空闲。
+然而设置的过小，又会令到consumer不能充分工作，因为我们总想它100％的时间都是处于繁忙状态，
+而这时可能会在处理完一条消息后，BlockingQueue为空，因为新的消息还未来得及到达，所以consumer就处于空闲状态了。  
+
+prefetch的设置与以下几点有关：  
+客户端服务端之间网络传输时间  
+consumer消耗一条消息所执行的业务逻辑的耗时  
+网络状况  
+
+可以通过修改配置文件 application.yml 添加prefetch等相关参数，如下：  
+```
+spring:  
+  rabbitmq:
+    listener:
+      simple:
+        prefetch: 2
+        concurrency: 2
+        maxConcurrency: 4
+```
+上面的参数配置根据自己的业务使用情况进行配置。  
+
+
+
 
 
 
