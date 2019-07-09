@@ -15,6 +15,11 @@ public final class RabbitMqConstants {
     public final static String TOPIC_EXCHANGE_NAME = "topic.order";
 
     /**
+     * 死信交换器的名字
+     */
+    public final static String DEAD_LETTER_EXCHANGE_NAME = "DL_EXCHANGE";
+
+    /**
      * direct 类型的交换机的名字
      */
     public final static String DIRECT_EXCHANGE_NAME = "amq.direct";
@@ -35,6 +40,16 @@ public final class RabbitMqConstants {
     public static final String DIRECT_QUEUE_NAME = "direct.queue";
 
     /**
+     * 死信队列的名字
+     */
+    public static final String DEAD_LETTER_QUEUE_NAME = "DL_QUEUE";
+
+    /**
+     * 死信队列转发队列的名字
+     */
+    public static final String DEAD_LETTER_REDIRECT_QUEUE_NAME = "REDIRECT_QUEUE";
+
+    /**
      * topic 类型交换机与队列绑定的key-基本信息
      */
     public final static String TOPIC_ROUTING_KEY_BASIC = "topic.queue.basic.#";
@@ -52,5 +67,15 @@ public final class RabbitMqConstants {
     public final static String BASIC_ROUTING_KEY = "topic.queue.basic.1";
 
     public final static String OBJECT_ROUTING_KEY = "topic.queue.object.order";
+
+    /**
+     * 死信队列的路由key
+     */
+    public final static String DEAD_LETTER_ROUTING_KEY = "DL_KEY";
+
+    /**
+     * 死信队列的转发队列的路由key
+     */
+    public final static String DEAD_LETTER_REDIRECT_ROUTING_KEY = "KEY_R";
     /*********************************** 消息队列常量结束 **************************/
 }
