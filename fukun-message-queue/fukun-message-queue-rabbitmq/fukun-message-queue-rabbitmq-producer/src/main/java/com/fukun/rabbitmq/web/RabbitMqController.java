@@ -9,6 +9,8 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.core.MessagePostProcessor;
+import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.connection.CorrelationData;
 import org.springframework.web.bind.annotation.*;
 
@@ -52,6 +54,29 @@ public class RabbitMqController extends BaseCallBack {
     @PostMapping
     public void saveOrder(@RequestBody @ApiParam(value = "json格式", name = "订单对象", required = true) Order order) {
         orderService.createOrder(order);
+    }
+
+    /**
+     * 测试死信队列.
+     *
+     * @param p the p
+     * @return the response entity
+     */
+    @ApiOperation(value = "测试死信队列", httpMethod = "POST", notes = "测试死信队列")
+    @PostMapping("/dead")
+    public void deadLetter(@RequestParam(" p") @ApiParam(required = true, name = " p", value = "消息") String p) {
+        CorrelationData correlationData = new CorrelationData(UUID.randomUUID().toString());
+//        声明消息处理器  这个对消息进行处理  可以设置一些参数   对消息进行一些定制化处理   我们这里  来设置消息的编码  以及消息的过期时间  因为在.net 以及其他版本过期时间不一致   这里的时间毫秒值 为字符串
+        MessagePostProcessor messagePostProcessor = message -> {
+            MessageProperties messageProperties = message.getMessageProperties();
+//            设置编码
+            messageProperties.setContentEncoding("utf-8");
+//            设置过期时间10*1000毫秒
+            messageProperties.setExpiration("10000");
+            return message;
+        };
+//         向DL_QUEUE 发送消息  10*1000毫秒后过期 形成死信
+        rabbitTemplate.convertAndSend(RabbitMqConstants.DEAD_LETTER_EXCHANGE_NAME, RabbitMqConstants.DEAD_LETTER_ROUTING_KEY, p, messagePostProcessor, correlationData);
     }
 
 }

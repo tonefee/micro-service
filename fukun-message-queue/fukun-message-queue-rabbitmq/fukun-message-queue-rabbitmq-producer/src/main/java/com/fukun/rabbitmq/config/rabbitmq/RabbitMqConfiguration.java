@@ -16,6 +16,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Scope;
 
 import javax.annotation.Resource;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * rabbitmq 配置类
@@ -55,7 +57,68 @@ public class RabbitMqConfiguration {
      */
     @Bean
     TopicExchange topicExchange() {
-        return new TopicExchange(RabbitMqConstants.TOPIC_EXCHANGE_NAME);
+        return new TopicExchange(RabbitMqConstants.TOPIC_EXCHANGE_NAME, true, false);
+    }
+
+    /**
+     * 死信队列跟交换机类型没有关系 不一定为directExchange  不影响该类型交换机的特性.
+     *
+     * @return the exchange
+     */
+    @Bean("deadLetterExchange")
+    public Exchange deadLetterExchange() {
+        return ExchangeBuilder.directExchange(RabbitMqConstants.DEAD_LETTER_EXCHANGE_NAME).durable(true).build();
+    }
+
+    /**
+     * 声明一个死信队列.
+     * x-dead-letter-exchange   对应  死信交换机
+     * x-dead-letter-routing-key  对应 死信队列
+     * x-dead-letter-exchange 来标识一个交换机  x-dead-letter-routing-key  来标识一个绑定键（RoutingKey）
+     * 这个绑定键 是分配给 标识的交换机的   如果没有特殊指定 声明队列的原routingkey ,
+     * 如果有队列通过此绑定键 绑定到交换机    那么死信会被该交换机转发到 该队列上  通过监听 可对消息进行消费
+     *
+     * @return the queue
+     */
+    @Bean("deadLetterQueue")
+    public Queue deadLetterQueue() {
+        Map<String, Object> args = new HashMap<>(2);
+//       x-dead-letter-exchange    声明  死信交换机
+        args.put("x-dead-letter-exchange", RabbitMqConstants.DEAD_LETTER_EXCHANGE_NAME);
+//       x-dead-letter-routing-key    声明 死信路由键
+        args.put("x-dead-letter-routing-key", RabbitMqConstants.DEAD_LETTER_REDIRECT_ROUTING_KEY);
+        return QueueBuilder.durable(RabbitMqConstants.DEAD_LETTER_QUEUE_NAME).withArguments(args).build();
+    }
+
+    /**
+     * 定义死信队列转发队列.
+     *
+     * @return the queue
+     */
+    @Bean("redirectQueue")
+    public Queue redirectQueue() {
+        return QueueBuilder.durable(RabbitMqConstants.DEAD_LETTER_REDIRECT_QUEUE_NAME).build();
+    }
+
+    /**
+     * 死信路由通过 DL_KEY 绑定键绑定到死信队列上.
+     *
+     * @return the binding
+     */
+    @Bean
+    public Binding deadLetterBinding() {
+        return new Binding(RabbitMqConstants.DEAD_LETTER_QUEUE_NAME, Binding.DestinationType.QUEUE, RabbitMqConstants.DEAD_LETTER_EXCHANGE_NAME, RabbitMqConstants.DEAD_LETTER_ROUTING_KEY, null);
+
+    }
+
+    /**
+     * 死信路由通过 KEY_R 绑定键绑定到死信队列上.
+     *
+     * @return the binding
+     */
+    @Bean
+    public Binding redirectBinding() {
+        return new Binding(RabbitMqConstants.DEAD_LETTER_REDIRECT_QUEUE_NAME, Binding.DestinationType.QUEUE, RabbitMqConstants.DEAD_LETTER_EXCHANGE_NAME, RabbitMqConstants.DEAD_LETTER_REDIRECT_ROUTING_KEY, null);
     }
 
     /**

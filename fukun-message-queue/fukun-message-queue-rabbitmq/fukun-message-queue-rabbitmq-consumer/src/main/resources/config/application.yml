@@ -1,0 +1,28 @@
+spring:
+  profiles:
+    active: dev
+  application:
+    name: fukun-message-queue-rabbitmq-consumer
+  http:
+    encoding:
+      force: true
+      charset: UTF-8
+      enabled: true
+  messages:
+    encoding: UTF-8
+
+  rabbitmq:
+    addresses: 192.168.0.43:5672
+    host: 192.168.0.43
+    port: 5672
+    username: guest
+    password: guest
+    listener:
+      direct:
+        # 配置该消费者的ack方式为手动(消费者的ack方式默认是自动的，也就是说消息一旦被消费（无论是否处理成功），消息都会被确认，然后会从队列中删除)
+        acknowledge-mode: manual
+
+server:
+  port: 8002
+  tomcat:
+    uri-encoding: UTF-8
