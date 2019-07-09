@@ -1,6 +1,6 @@
 package com.fukun.rabbitmq.producer;
 
-import com.fukun.rabbitmq.constant.Constants;
+import com.fukun.commons.constants.RabbitMqConstants;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.Message;
 
@@ -33,7 +33,7 @@ public class MsgSendReturnCallback extends BaseCallBack {
             log.info("send message failed: replyCode：{}，replyText：{}", replyCode, replyText);
         }
         // 重新发送消息，可以使用定时机制重发消息等
-        rabbitTemplate.convertAndSend(Constants.TOPIC_EXCHANGE_NAME, Constants.OBJECT_ROUTING_KEY, message);
+        rabbitTemplate.convertAndSend(RabbitMqConstants.TOPIC_EXCHANGE_NAME, RabbitMqConstants.OBJECT_ROUTING_KEY, message);
         // rabbitTemplate.send(message);
     }
 

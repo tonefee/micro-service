@@ -1,6 +1,7 @@
 package com.fukun.rabbitmq.service;
 
 import com.alibaba.fastjson.JSON;
+import com.fukun.commons.constants.RabbitMqConstants;
 import com.fukun.rabbitmq.constant.Constants;
 import com.fukun.rabbitmq.mapper.BrokerMessageLogMapper;
 import com.fukun.rabbitmq.mapper.OrderMapper;
@@ -103,7 +104,7 @@ public class OrderService extends BaseCallBack {
         // 发送消息
         // 指定消息交换机  "amq.topic"
         // 指定队列key    "direct.queue"
-        rabbitTemplate.convertAndSend(Constants.TOPIC_EXCHANGE_NAME, Constants.OBJECT_ROUTING_KEY,
+        rabbitTemplate.convertAndSend(RabbitMqConstants.TOPIC_EXCHANGE_NAME, RabbitMqConstants.OBJECT_ROUTING_KEY,
                 message, correlationData);
         if (log.isInfoEnabled()) {
             log.info("订单相关的消息发送完成，消息的id是: {}，发送的经过编码的消息是：{}，等待mq发送确认消息。", msgId, message);

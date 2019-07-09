@@ -1,6 +1,6 @@
 package com.fukun.rabbitmq.config.rabbitmq;
 
-import com.fukun.rabbitmq.constant.Constants;
+import com.fukun.commons.constants.RabbitMqConstants;
 import com.fukun.rabbitmq.producer.MsgSendConfirmCallBack;
 import com.fukun.rabbitmq.producer.MsgSendReturnCallback;
 import lombok.extern.slf4j.Slf4j;
@@ -55,7 +55,7 @@ public class RabbitMqConfiguration {
      */
     @Bean
     TopicExchange topicExchange() {
-        return new TopicExchange(Constants.TOPIC_EXCHANGE_NAME);
+        return new TopicExchange(RabbitMqConstants.TOPIC_EXCHANGE_NAME);
     }
 
     /**
@@ -72,23 +72,23 @@ public class RabbitMqConfiguration {
 //        arguments.put("x-message-ttl", 60000);//60秒自动删除
 //        return new Queue(QUEUE_NAME3,true,false,true,arguments);
         // 队列持久化
-        return new Queue(Constants.TOPIC_QUEUE_NAME_BASIC, true);
+        return new Queue(RabbitMqConstants.TOPIC_QUEUE_NAME_BASIC, true);
     }
 
     @Bean
     public Queue topicObjectQueue() {
         // 队列持久化
-        return new Queue(Constants.TOPIC_QUEUE_NAME_OBJECT, true);
+        return new Queue(RabbitMqConstants.TOPIC_QUEUE_NAME_OBJECT, true);
     }
 
     @Bean
     public Binding topicBasicBinding() {
-        return BindingBuilder.bind(topicBasicQueue()).to(topicExchange()).with(Constants.TOPIC_ROUTING_KEY_BASIC);
+        return BindingBuilder.bind(topicBasicQueue()).to(topicExchange()).with(RabbitMqConstants.TOPIC_ROUTING_KEY_BASIC);
     }
 
     @Bean
     public Binding topicObjectBinding() {
-        return BindingBuilder.bind(topicObjectQueue()).to(topicExchange()).with(Constants.TOPIC_ROUTING_KEY_OBJECT);
+        return BindingBuilder.bind(topicObjectQueue()).to(topicExchange()).with(RabbitMqConstants.TOPIC_ROUTING_KEY_OBJECT);
     }
 
     /**

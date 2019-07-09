@@ -160,6 +160,17 @@
             </exclusions>
         </dependency>
         <dependency>
+            <groupId>com.fukun</groupId>
+            <artifactId>fukun-commons-public</artifactId>
+            <version>${parent.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
             <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>
             <version>${gson.version}</version>

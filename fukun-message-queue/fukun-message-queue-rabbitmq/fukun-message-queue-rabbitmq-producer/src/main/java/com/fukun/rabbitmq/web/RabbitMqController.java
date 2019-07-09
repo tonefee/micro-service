@@ -1,7 +1,7 @@
 package com.fukun.rabbitmq.web;
 
+import com.fukun.commons.constants.RabbitMqConstants;
 import com.fukun.commons.web.annotations.ResponseResult;
-import com.fukun.rabbitmq.constant.Constants;
 import com.fukun.rabbitmq.model.Order;
 import com.fukun.rabbitmq.producer.BaseCallBack;
 import com.fukun.rabbitmq.service.OrderService;
@@ -39,7 +39,7 @@ public class RabbitMqController extends BaseCallBack {
             log.info("消息的id：{}", correlationData.getId());
         }
         // 用RabbitMQ发送MQTT需将exchange配置为amq.topic
-        rabbitTemplate.convertAndSend(Constants.TOPIC_EXCHANGE_NAME, Constants.BASIC_ROUTING_KEY, message, correlationData);
+        rabbitTemplate.convertAndSend(RabbitMqConstants.TOPIC_EXCHANGE_NAME, RabbitMqConstants.BASIC_ROUTING_KEY, message, correlationData);
     }
 
     /**

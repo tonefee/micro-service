@@ -1,5 +1,6 @@
 package com.fukun.rabbitmq.producer;
 
+import com.fukun.commons.constants.RabbitMqConstants;
 import com.fukun.rabbitmq.constant.Constants;
 import com.fukun.rabbitmq.mapper.BrokerMessageLogMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -82,7 +83,7 @@ public class MsgSendConfirmCallBack extends BaseCallBack {
                 if (null != cacheKey) {
                     Message message = (Message) cacheKey;
                     // 重新发送消息
-                    rabbitTemplate.convertAndSend(Constants.TOPIC_EXCHANGE_NAME, Constants.OBJECT_ROUTING_KEY,
+                    rabbitTemplate.convertAndSend(RabbitMqConstants.TOPIC_EXCHANGE_NAME, RabbitMqConstants.OBJECT_ROUTING_KEY,
                             message, correlationData);
                 }
             }
