@@ -954,7 +954,262 @@ topic.queue.object.*的队列，点击下面的Get Message(s)，如下：
 
 好了，整个生产者到队列的消息不丢失的实现策略就说完了，大家有什么好的建议可以提出来，谢谢！
 
+# 实现mq到消费端的消息可靠性投递
+
+## Rabbitmq 重消费处理
+
+### 死信队列介绍    
+死信队列&死信交换器：DLX，dead-letter-exchange,称之为死信交换器，
+当消息变成一个死信之后，如果这个消息所在的队列存在x-dead-letter-exchange参数，
+那么它会被发送到x-dead-letter-exchange对应值的交换器上，这个交换器就称之为死信交换器，
+与这个死信交换器绑定的队列就是死信队列。
  
+利用DLX，当消息在一个队列中变成死信 (dead message) 之后，
+它能被重新publish到另一个Exchange，这个Exchange就是DLX。  
+    
+消息变成死信（死信消息）有以下几种情况  
+消息被拒绝(basic.reject / basic.nack)，并且不再重新投递requeue = false  
+消息TTL过期  
+队列达到最大长度，队列超载  
+
+变成了“死信”后，被重新投递（publish）到另一个Exchange，该Exchange就是DLX
+然后该Exchange根据绑定规则转发到对应的队列上，监听该队列就可以重新消费，
+说白了就是没有被消费的消息换个地方重新被消费。  
+
+生产者   -->  消息 --> 交换机  --> 队列  --> 变成死信  --> DLX交换机 -->队列 --> 消费者    
+
+
+过期消息    
+在 rabbitmq 中存在2种方可设置消息的过期时间，第一种通过对队列进行设置，这种设置后，该队列中所有的消息都存在相同的过期时间，
+第二种通过对消息本身进行设置，那么每条消息的过期时间都不一样。如果同时使用这2种方法，那么以过期时间小的那个数值为准。
+当消息达到过期时间还没有被消费，那么那个消息就成为了一个死信消息。  
+队列设置：在队列申明的时候使用 x-message-ttl 参数，单位为 毫秒  
+单个消息设置：是设置消息属性的 expiration 参数的值，单位为 毫秒  
+
+延时队列
+在rabbitmq中不存在延时队列，但是我们可以通过设置消息的过期时间和死信队列来模拟出延时队列。
+消费者监听死信交换器绑定的队列，而不要监听消息发送的队列。
+
+死信处理过程  
+DLX也是一个正常的Exchange，和一般的Exchange没有区别，它能在任何的队列上被指定，实际上就是设置某个队列的属性。    
+当这个队列中有死信时，RabbitMQ就会自动的将这个消息重新发布到设置的Exchange上去，进而被路由到另一个队列。   
+可以监听这个队列中的消息做相应的处理。  
+
+### 业务需求  
+需求：用户在系统中发送一个消息（比如创建订单的消息），如果10s后，消费者没有消费（用户没有进行支付），
+那么消息就会进入到死信队列中（自动取消订单）。    
+分析：
+        1、上面这个情况，我们就适合使用延时队列来实现，那么延时队列如何创建    
+        2、延时队列可以由 过期消息+死信队列 来实现     
+        3、过期消息通过队列中设置 x-message-ttl 参数实现或者单个消息设置expiration属性。    
+        4、死信队列通过在队列申明时，给队列设置 x-dead-letter-exchange 参数，然后另外申明一个队列绑定x-dead-letter-exchange对应的交换器。    
+        
+### 代码实现步骤
+下面测试死信队列的代码实现步骤   
+生产端的 RabbitMqConfiguration 中添加如下内容：   
+    
+```
+ 
+    /**
+     * 死信队列跟交换机类型没有关系 不一定为directExchange  不影响该类型交换机的特性.
+     *
+     * @return the exchange
+     */
+    @Bean("deadLetterExchange")
+    public Exchange deadLetterExchange() {
+        return ExchangeBuilder.directExchange(RabbitMqConstants.DEAD_LETTER_EXCHANGE_NAME).durable(true).build();
+    }
+
+    /**
+     * 声明一个死信队列.
+     * x-dead-letter-exchange   对应  死信交换机
+     * x-dead-letter-routing-key  对应 死信队列
+     * x-dead-letter-exchange 来标识一个交换机  x-dead-letter-routing-key  来标识一个绑定键（RoutingKey）
+     * 这个绑定键 是分配给 标识的交换机的   如果没有特殊指定 声明队列的原routingkey ,
+     * 如果有队列通过此绑定键 绑定到交换机    那么死信会被该交换机转发到 该队列上  通过监听 可对消息进行消费
+     *
+     * @return the queue
+     */
+    @Bean("deadLetterQueue")
+    public Queue deadLetterQueue() {
+        Map<String, Object> args = new HashMap<>(2);
+//       x-dead-letter-exchange    声明  死信交换机
+        args.put("x-dead-letter-exchange", RabbitMqConstants.DEAD_LETTER_EXCHANGE_NAME);
+//       x-dead-letter-routing-key    声明 死信路由键
+        args.put("x-dead-letter-routing-key", RabbitMqConstants.DEAD_LETTER_REDIRECT_ROUTING_KEY);
+        return QueueBuilder.durable(RabbitMqConstants.DEAD_LETTER_QUEUE_NAME).withArguments(args).build();
+    }
+
+    /**
+     * 定义死信队列转发队列.
+     *
+     * @return the queue
+     */
+    @Bean("redirectQueue")
+    public Queue redirectQueue() {
+        return QueueBuilder.durable(RabbitMqConstants.DEAD_LETTER_REDIRECT_QUEUE_NAME).build();
+    }
+
+    /**
+     * 死信路由通过 DL_KEY 绑定键绑定到死信队列上.
+     *
+     * @return the binding
+     */
+    @Bean
+    public Binding deadLetterBinding() {
+        return new Binding(RabbitMqConstants.DEAD_LETTER_QUEUE_NAME, Binding.DestinationType.QUEUE, RabbitMqConstants.DEAD_LETTER_EXCHANGE_NAME, RabbitMqConstants.DEAD_LETTER_ROUTING_KEY, null);
+
+    }
+
+    /**
+     * 死信路由通过 KEY_R 绑定键绑定到死信队列上.
+     *
+     * @return the binding
+     */
+    @Bean
+    public Binding redirectBinding() {
+        return new Binding(RabbitMqConstants.DEAD_LETTER_REDIRECT_QUEUE_NAME, Binding.DestinationType.QUEUE, RabbitMqConstants.DEAD_LETTER_EXCHANGE_NAME, RabbitMqConstants.DEAD_LETTER_REDIRECT_ROUTING_KEY, null);
+    }
+``` 
+然后启动生产端，访问swagger首页并发送消息，然后在rabbitmq控制台查看消息内容。  
+
+相关的死信交换器  
+
+![可靠消息投递](pictures/p12.png)          
+ 
+ 相关的死信队列和死信转发队列  
+ 
+![可靠消息投递](pictures/p13.png)  
+
+消息内容  
+
+![可靠消息投递](pictures/p14.png)  
+
+消费端的代码很简单，最主要的就是RabbitMqConsumer这个类，这个类的内容如下：  
+
+```
+package com.fukun.consumer.consumer;
+
+import com.fukun.commons.constants.RabbitMqConstants;
+import com.fukun.consumer.model.Order;
+import com.fukun.consumer.service.StockService;
+import com.google.gson.Gson;
+import com.rabbitmq.client.Channel;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.core.Message;
+import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.stereotype.Component;
+
+import javax.annotation.Resource;
+import java.io.IOException;
+
+/**
+ * rabbitMq消费端的消费消息的逻辑
+ *
+ * @author tangyifei
+ * @date 2019年7月9日10:07:25
+ */
+@Component
+@Slf4j
+public class RabbitMqConsumer {
+
+    @Resource
+    private StockService stockService;
+
+    /**
+     * queues 指定从哪个队列（queue）订阅消息
+     * 第一个参数 deliveryTag：就是接受的消息的deliveryTag,可以通过msg.getMessageProperties().getDeliveryTag()获得
+     * 第二个参数 multiple：如果为true，确认之前接受到的消息；如果为false，只确认当前消息。
+     * 如果为true就表示连续取得多条消息才会发确认，和计算机网络的中tcp协议接受分组的累积确认十分相似，
+     * 能够提高效率。
+     * 同样的，如果要nack或者拒绝消息（reject）的时候，
+     * 也是调用channel里面的basicXXX方法就可以了（要指定tagId）。
+     * 注意：如果抛异常或nack（并且requeue为true），消息会重新入队列，
+     * 并且会造成消费者不断从队列中读取同一条消息的假象。
+     *
+     * @param message 消息
+     * @param channel 通道
+     */
+    @RabbitListener(queues = {RabbitMqConstants.TOPIC_QUEUE_NAME_BASIC})
+    public void handleBasicMessage(Message message, Channel channel) throws IOException {
+        try {
+            // 处理消息
+            if (log.isInfoEnabled()) {
+                log.info("消费者处理消息成功，消息是：{}", new String(message.getBody(), "UTF-8"));
+            }
+            // 执行减库存操作，注意保证减库存接口的幂等性
+            stockService.reduceStock(new Gson().fromJson(new String(message.getBody()), Order.class));
+
+            // 确认消息
+            // 如果 channel.basicAck   channel.basicNack  channel.basicReject 这三个方法都不执行，消息也会被确认 【这个其实并没有在官方看到，不过自己测试的确是这样哈】
+            // 所以，正常情况下一般不需要执行 channel.basicAck
+            channel.basicAck(message.getMessageProperties().getDeliveryTag(), true);
+        } catch (Exception e) {
+            if (log.isInfoEnabled()) {
+                log.error("消费者处理消息失败，消息是：{}，异常是：{}", new String(message.getBody(), "UTF-8"), e);
+            }
+            // 处理消息失败，将消息重新放回队列，但是消费端处理失败的消息无法进入死信队列中
+            channel.basicNack(message.getMessageProperties().getDeliveryTag(), false, true);
+        }
+    }
+
+    @RabbitListener(queues = {RabbitMqConstants.TOPIC_QUEUE_NAME_OBJECT})
+    public void handleObjectMessage(Message message, Channel channel) throws IOException {
+        try {
+            if (log.isInfoEnabled()) {
+                // 处理消息
+                log.info("消费者处理消息成功，消息是：{}", new String(message.getBody()));
+            }
+            // 执行减库存操作，注意保证减库存接口的幂等性
+            if (null != message) {
+                stockService.reduceStock(new Gson().fromJson(new String(message.getBody()), Order.class));
+            }
+            // 确认消息
+            // 如果 channel.basicAck   channel.basicNack  channel.basicReject 这三个方法都不执行，消息也会被确认 【这个其实并没有在官方看到，不过自己测试的确是这样哈】
+            // 所以，正常情况下一般不需要执行 channel.basicAck
+            channel.basicAck(message.getMessageProperties().getDeliveryTag(), true);
+        } catch (Exception e) {
+            if (log.isInfoEnabled()) {
+                log.error("消费者处理消息失败，消息是：{}，异常是：{}", new String(message.getBody()), e);
+            }
+            // 处理消息失败，将消息重新放回队列，但是消费端处理失败的消息无法进入死信队列中
+            channel.basicNack(message.getMessageProperties().getDeliveryTag(), false, true);
+        }
+    }
+
+    /**
+     * 监听替补队列 来验证死信.
+     *
+     * @param message the message
+     * @param channel the channel
+     * @throws IOException the io exception  这里异常需要处理
+     */
+    @RabbitListener(queues = {RabbitMqConstants.DEAD_LETTER_REDIRECT_QUEUE_NAME})
+    public void redirect(Message message, Channel channel) throws IOException {
+        channel.basicAck(message.getMessageProperties().getDeliveryTag(), false);
+        if (log.isInfoEnabled()) {
+            log.info("dead message  10s 后 消费消息 {}", new String(message.getBody()));
+        }
+    }
+
+}
+```
+然后启动消费者，查看控制台，如下：  
+
+![可靠消息投递](pictures/p15.png)  
+
+消费端成功消费消息，再次查看rabbitmq的控制台，获取死信队列相关的转发队列中的消息，如下：   
+ 
+![可靠消息投递](pictures/p16.png)    
+
+消息为空，说明此消息被消费者成功消费。  
+
+
+
+
+
+    
+  
 
 
 

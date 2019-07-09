@@ -17,7 +17,14 @@ spring:
     port: 5672
     username: guest
     password: guest
+    ###开启消息确认机制 confirms
+    virtual-host: /
+    publisher-confirms: true
+    publisher-returns: true
+    #采用手动应答
     listener:
+      simple:
+        acknowledge-mode: manual
       direct:
         # 配置该消费者的ack方式为手动(消费者的ack方式默认是自动的，也就是说消息一旦被消费（无论是否处理成功），消息都会被确认，然后会从队列中删除)
         acknowledge-mode: manual
