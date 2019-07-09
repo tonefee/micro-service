@@ -184,6 +184,7 @@ public class RabbitMqConfiguration {
         // 可针对每次请求的消息去确定’mandatory’的boolean值，
         // 只能在提供’return -callback’时使用，与mandatory互斥
         template.setReturnCallback(msgSendReturnCallback());
+        // 如果为true，则监听器会接收到路由不可达(原因可能是相关的交换器不存在)的消息，然后进行后续处理，如果为false，那么broker端自动删除该消息！
         template.setMandatory(true);
         if (log.isInfoEnabled()) {
             log.info("加载rabbit模板类结束！");
