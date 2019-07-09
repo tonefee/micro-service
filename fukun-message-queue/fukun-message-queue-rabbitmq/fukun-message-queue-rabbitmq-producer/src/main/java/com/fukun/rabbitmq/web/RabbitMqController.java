@@ -33,7 +33,7 @@ public class RabbitMqController extends BaseCallBack {
 
     @ApiOperation(value = "测试消息", httpMethod = "POST", notes = "测试消息")
     @PostMapping("/text")
-    public void callbak(@RequestParam("message") @ApiParam(required = true, name = "message", value = "消息") String message) {
+    public void callback(@RequestParam("message") @ApiParam(required = true, name = "message", value = "消息") String message) {
         CorrelationData correlationData = new CorrelationData(UUID.randomUUID().toString());
         if (log.isInfoEnabled()) {
             log.info("消息的id：{}", correlationData.getId());
