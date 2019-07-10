@@ -198,9 +198,7 @@ public class RedisConfig extends CachingConfigurerSupport {
 
     @Bean
     public RedisHandler redisHandler(RedisTemplate<String, Object> redisTemplate) {
-        RedisHandler redisHandler = new RedisHandler();
-        redisHandler.setRedisTemplate(redisTemplate);
-        return redisHandler;
+        return new RedisHandler(redisTemplate);
     }
 
 }
