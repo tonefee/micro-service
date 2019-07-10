@@ -2,7 +2,9 @@ package com.fukun.rabbitmq.config.redis;
 
 import com.alibaba.fastjson.JSON;
 import com.fukun.commons.util.CollectionUtil;
+import org.springframework.data.redis.core.Cursor;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.util.CollectionUtils;
 
@@ -386,7 +388,7 @@ public class RedisHandler {
     //================================针对Map的操作开始(Redis hash是一个string类型的field和value的映射表，hash特别适合用于存储对象。每个 hash 可以存储 2^32 - 1 键值对（40多亿个键值对）。)=================================
 
     /**
-     * HashGet
+     * 获取存储在哈希表中指定字段的值
      *
      * @param key  键 不能为null
      * @param item 项 不能为null
@@ -397,112 +399,150 @@ public class RedisHandler {
     }
 
     /**
-     * 获取hashKey对应的所有键值
+     * 获取所有给定字段的值
+     *
+     * @param key  键 不能为null
+     * @param item 项 不能为null
+     * @return 值
+     */
+    @SuppressWarnings("unchecked")
+    public List<?> hmget(String key, String... item) {
+        return redisTemplate.opsForHash().multiGet(key, CollectionUtils.arrayToList(item));
+    }
+
+    /**
+     * 获取在哈希表中指定 key 的所有字段和值
      *
      * @param key 键
      * @return 对应的多个键值
      */
-    public Map<Object, Object> hmget(String key) {
+    public Map<Object, Object> hmGetAll(String key) {
         return redisTemplate.opsForHash().entries(key);
     }
 
     /**
-     * HashSet
+     * 获取所有哈希表中的字段
      *
      * @param key 键
-     * @param map 对应多个键值
-     * @return true 成功 false 失败
+     * @return key对应的所有字段
      */
-    public boolean hmset(String key, Map<String, Object> map) {
-        try {
-            redisTemplate.opsForHash().putAll(key, map);
-            return true;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
-        }
+    public Set<Object> hKeys(String key) {
+        return redisTemplate.opsForHash().keys(key);
     }
 
     /**
-     * HashSet 并设置时间
+     * 获取哈希表中字段的数量
+     *
+     * @param key 键
+     * @return key对应的字段数量
+     */
+    public Long hLen(String key) {
+        return redisTemplate.opsForHash().size(key);
+    }
+
+    /**
+     * HashSet同时将多个 field-value (域-值)对设置到哈希表 key 中
+     *
+     * @param key 键
+     * @param map 对应多个键值
+     */
+    public void hmset(String key, Map<String, Object> map) {
+        redisTemplate.opsForHash().putAll(key, map);
+    }
+
+    /**
+     * HashSet同时将多个 field-value (域-值)对设置到哈希表 key 中, 并设置时间
      *
      * @param key  键
      * @param map  对应多个键值
      * @param time 时间(秒)
-     * @return true成功 false失败
      */
-    public boolean hmset(String key, Map<String, Object> map, long time) {
-        try {
-            redisTemplate.opsForHash().putAll(key, map);
-            if (time > 0) {
-                expire(key, time);
-            }
-            return true;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
-        }
+    public void hmset(String key, Map<String, Object> map, long time) {
+        redisTemplate.opsForHash().putAll(key, map);
+        expire(key, time);
     }
 
     /**
-     * 向一张hash表中放入数据,如果不存在将创建
+     * 将哈希表 key 中的字段 field 的值设为 value
      *
      * @param key   键
-     * @param item  项
+     * @param field 域
      * @param value 值
-     * @return true 成功 false失败
      */
-    public boolean hset(String key, String item, Object value) {
-        try {
-            redisTemplate.opsForHash().put(key, item, value);
-            return true;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
-        }
+    public void hset(String key, String field, Object value) {
+        redisTemplate.opsForHash().put(key, field, value);
     }
 
     /**
-     * 向一张hash表中放入数据,如果不存在将创建
+     * 只有在字段 field 不存在时，设置哈希表字段的值。
+     *
+     * @param key   键
+     * @param field 域
+     * @param value 值
+     */
+    public Boolean hsetIfAbsent(String key, String field, Object value) {
+        return redisTemplate.opsForHash().putIfAbsent(key, field, value);
+    }
+
+    /**
+     * 将哈希表 key 中的字段 field 的值设为 value，并设置超时时间
      *
      * @param key   键
      * @param item  项
      * @param value 值
      * @param time  时间(秒)  注意:如果已存在的hash表有时间,这里将会替换原有的时间
-     * @return true 成功 false失败
      */
-    public boolean hset(String key, String item, Object value, long time) {
-        try {
-            redisTemplate.opsForHash().put(key, item, value);
-            if (time > 0) {
-                expire(key, time);
-            }
-            return true;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
-        }
+    public void hset(String key, String item, Object value, long time) {
+        redisTemplate.opsForHash().put(key, item, value);
+        expire(key, time);
     }
 
     /**
-     * 删除hash表中的值
+     * 只有在字段 field 不存在时，设置哈希表字段的值，并设置超时时间
+     *
+     * @param key   键
+     * @param item  项
+     * @param value 值
+     * @param time  时间(秒)  注意:如果已存在的hash表有时间,这里将会替换原有的时间
+     */
+    public void hsetIfAbsent(String key, String item, Object value, long time) {
+        redisTemplate.opsForHash().putIfAbsent(key, item, value);
+        expire(key, time);
+    }
+
+    /**
+     * 删除hash表中的值，删除一个或多个哈希表字段
      *
      * @param key  键 不能为null
-     * @param item 项 可以使多个 不能为null
+     * @param item 项 可以是多个项，但是不能为null（如果存储对象，表示的是对象的多个属性）
      */
-    public void hdel(String key, Object... item) {
-        redisTemplate.opsForHash().delete(key, item);
+    public Long hdel(String key, Object... item) {
+        return redisTemplate.opsForHash().delete(key, item);
     }
 
     /**
-     * 判断hash表中是否有该项的值
+     * 判断hash表中是否有该项的值，查看哈希表 key 中，指定的字段是否存在
+     * 如果存储的是对象，就是说查看某个对象的某个属性是否存在
      *
      * @param key  键 不能为null
      * @param item 项 不能为null
      * @return true 存在 false不存在
      */
-    public boolean hHasKey(String key, String item) {
+    public Boolean hHasKey(String key, String item) {
         return redisTemplate.opsForHash().hasKey(key, item);
+    }
+
+    /**
+     * hash递增 如果不存在,就会创建一个 并把新增后的值返回
+     * 为哈希表 key 中的指定字段的浮点数值加上增量 increment
+     *
+     * @param key  键
+     * @param item 项
+     * @param by   要增加几(大于0)
+     * @return 结果
+     */
+    public Double hincr(String key, String item, double by) {
+        return redisTemplate.opsForHash().increment(key, item, by);
     }
 
     /**
@@ -511,10 +551,22 @@ public class RedisHandler {
      * @param key  键
      * @param item 项
      * @param by   要增加几(大于0)
-     * @return
+     * @return 结果
      */
-    public double hincr(String key, String item, double by) {
+    public Long hincr(String key, String item, long by) {
         return redisTemplate.opsForHash().increment(key, item, by);
+    }
+
+    /**
+     * hash递减，针对浮点型
+     *
+     * @param key  键
+     * @param item 项
+     * @param by   要减少记(小于0)
+     * @return 递减结果
+     */
+    public double hdecr(String key, String item, double by) {
+        return redisTemplate.opsForHash().increment(key, item, -by);
     }
 
     /**
@@ -523,10 +575,31 @@ public class RedisHandler {
      * @param key  键
      * @param item 项
      * @param by   要减少记(小于0)
-     * @return
+     * @return 递减结果
      */
-    public double hdecr(String key, String item, double by) {
+    public Long hdecr(String key, String item, long by) {
         return redisTemplate.opsForHash().increment(key, item, -by);
+    }
+
+    /**
+     * 获取哈希表中所有值
+     *
+     * @param key 键
+     * @return key 对应的值集合
+     */
+    public List<?> hvalues(String key) {
+        return redisTemplate.opsForHash().values(key);
+    }
+
+    /**
+     * 迭代哈希表中的键值对
+     *
+     * @param key 键
+     * @param var 扫描项
+     * @return 符合条件的键值对游标对象
+     */
+    public Cursor<Map.Entry<Object, Object>> hscan(String key, ScanOptions var) {
+        return redisTemplate.opsForHash().scan(key, var);
     }
 
     //================================针对Map的操作结束=================================
