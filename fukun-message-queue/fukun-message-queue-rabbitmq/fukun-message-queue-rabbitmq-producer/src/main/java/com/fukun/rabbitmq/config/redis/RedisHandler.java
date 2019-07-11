@@ -359,7 +359,7 @@ public class RedisHandler {
      *
      * @param key    键
      * @param clazz  指定的类
-     * @param expire 过期时间
+     * @param expire 过期时间（秒）
      * @param <T>    指定的对象类型
      * @return 指定的对象
      */
@@ -390,24 +390,24 @@ public class RedisHandler {
     /**
      * 获取存储在哈希表中指定字段的值
      *
-     * @param key  键 不能为null
-     * @param item 项 不能为null
+     * @param key   键 不能为null
+     * @param field 域 不能为null
      * @return 值
      */
-    public Object hget(String key, String item) {
-        return redisTemplate.opsForHash().get(key, item);
+    public Object hget(String key, String field) {
+        return redisTemplate.opsForHash().get(key, field);
     }
 
     /**
      * 获取所有给定字段的值
      *
-     * @param key  键 不能为null
-     * @param item 项 不能为null
+     * @param key    键 不能为null
+     * @param fields 域  不能为null
      * @return 值
      */
     @SuppressWarnings("unchecked")
-    public List<?> hmget(String key, String... item) {
-        return redisTemplate.opsForHash().multiGet(key, CollectionUtils.arrayToList(item));
+    public List<?> hmget(String key, String... fields) {
+        return redisTemplate.opsForHash().multiGet(key, CollectionUtils.arrayToList(fields));
     }
 
     /**
@@ -488,12 +488,12 @@ public class RedisHandler {
      * 将哈希表 key 中的字段 field 的值设为 value，并设置超时时间
      *
      * @param key   键
-     * @param item  项
+     * @param field 域
      * @param value 值
      * @param time  时间(秒)  注意:如果已存在的hash表有时间,这里将会替换原有的时间
      */
-    public void hset(String key, String item, Object value, long time) {
-        redisTemplate.opsForHash().put(key, item, value);
+    public void hset(String key, String field, Object value, long time) {
+        redisTemplate.opsForHash().put(key, field, value);
         expire(key, time);
     }
 
@@ -501,84 +501,84 @@ public class RedisHandler {
      * 只有在字段 field 不存在时，设置哈希表字段的值，并设置超时时间
      *
      * @param key   键
-     * @param item  项
+     * @param field 域
      * @param value 值
      * @param time  时间(秒)  注意:如果已存在的hash表有时间,这里将会替换原有的时间
      */
-    public void hsetIfAbsent(String key, String item, Object value, long time) {
-        redisTemplate.opsForHash().putIfAbsent(key, item, value);
+    public void hsetIfAbsent(String key, String field, Object value, long time) {
+        redisTemplate.opsForHash().putIfAbsent(key, field, value);
         expire(key, time);
     }
 
     /**
      * 删除hash表中的值，删除一个或多个哈希表字段
      *
-     * @param key  键 不能为null
-     * @param item 项 可以是多个项，但是不能为null（如果存储对象，表示的是对象的多个属性）
+     * @param key    键 不能为null
+     * @param fields 域 可以是多个项，但是不能为null（如果存储对象，表示的是对象的多个属性）
      */
-    public Long hdel(String key, Object... item) {
-        return redisTemplate.opsForHash().delete(key, item);
+    public Long hdel(String key, Object... fields) {
+        return redisTemplate.opsForHash().delete(key, fields);
     }
 
     /**
      * 判断hash表中是否有该项的值，查看哈希表 key 中，指定的字段是否存在
      * 如果存储的是对象，就是说查看某个对象的某个属性是否存在
      *
-     * @param key  键 不能为null
-     * @param item 项 不能为null
+     * @param key   键 不能为null
+     * @param field 域 不能为null
      * @return true 存在 false不存在
      */
-    public Boolean hHasKey(String key, String item) {
-        return redisTemplate.opsForHash().hasKey(key, item);
+    public Boolean hHasKey(String key, String field) {
+        return redisTemplate.opsForHash().hasKey(key, field);
     }
 
     /**
      * hash递增 如果不存在,就会创建一个 并把新增后的值返回
      * 为哈希表 key 中的指定字段的浮点数值加上增量 increment
      *
-     * @param key  键
-     * @param item 项
-     * @param by   要增加几(大于0)
+     * @param key   键
+     * @param field 域
+     * @param by    要增加几(大于0)
      * @return 结果
      */
-    public Double hincr(String key, String item, double by) {
-        return redisTemplate.opsForHash().increment(key, item, by);
+    public Double hincr(String key, String field, double by) {
+        return redisTemplate.opsForHash().increment(key, field, by);
     }
 
     /**
      * hash递增 如果不存在,就会创建一个 并把新增后的值返回
      *
-     * @param key  键
-     * @param item 项
-     * @param by   要增加几(大于0)
+     * @param key   键
+     * @param field 域
+     * @param by    要增加几(大于0)
      * @return 结果
      */
-    public Long hincr(String key, String item, long by) {
-        return redisTemplate.opsForHash().increment(key, item, by);
+    public Long hincr(String key, String field, long by) {
+        return redisTemplate.opsForHash().increment(key, field, by);
     }
 
     /**
      * hash递减，针对浮点型
      *
-     * @param key  键
-     * @param item 项
-     * @param by   要减少记(小于0)
+     * @param key   键
+     * @param field 域
+     * @param by    要减少记(小于0)
      * @return 递减结果
      */
-    public double hdecr(String key, String item, double by) {
-        return redisTemplate.opsForHash().increment(key, item, -by);
+    public double hdecr(String key, String field, double by) {
+        return redisTemplate.opsForHash().increment(key, field, -by);
     }
 
     /**
      * hash递减
      *
-     * @param key  键
-     * @param item 项
-     * @param by   要减少记(小于0)
+     * @param key   键
+     * @param field 域
+     * @param by    要减少记(小于0)
      * @return 递减结果
      */
-    public Long hdecr(String key, String item, long by) {
-        return redisTemplate.opsForHash().increment(key, item, -by);
+    public Long hdecr(String key, String field, long by) {
+        return redisTemplate.opsForHash().increment(key, field, -by);
     }
 
     /**
@@ -837,130 +837,194 @@ public class RedisHandler {
 
     //============================针对zset的操作结束=============================
 
-    //===============================针对list的操作开始（列表最多可存储 2^32 - 1 元素 (4294967295, 每个列表可存储40多亿)。）=================================
+    //===============================针对list的操作开始（列表最多可存储 2^32 - 1 元素 (4294967295, 每个列表可存储40多亿)。Redis列表是简单的字符串列表，按照插入顺序排序。你可以添加一个元素到列表的头部（左边）或者尾部（右边））=================================
 
     /**
-     * 获取list缓存的内容
+     * 从列表的左边移出并获取列表的第一个元素， 如果列表没有元素会阻塞列表直到等待超时或发现可弹出元素为止
+     *
+     * @param key     键
+     * @param timeout 超时时间（秒）
+     * @return 键对应的值
+     */
+    public Object lpop(String key, long timeout) {
+        return redisTemplate.opsForList().leftPop(key, timeout, TimeUnit.SECONDS);
+    }
+
+    /**
+     * 从列表的左边移出并获取列表的第一个元素
+     *
+     * @param key 键
+     * @return 键对应的值
+     */
+    public Object lpop(String key) {
+        return redisTemplate.opsForList().leftPop(key);
+    }
+
+    /**
+     * 从列表的右边移出并获取列表的第一个元素， 如果列表没有元素会阻塞列表直到等待超时或发现可弹出元素为止
+     *
+     * @param key     键
+     * @param timeout 超时时间（秒）
+     * @return 键对应的值
+     */
+    public Object rpop(String key, long timeout) {
+        return redisTemplate.opsForList().rightPop(key, timeout, TimeUnit.SECONDS);
+    }
+
+    /**
+     * 从列表的右边移出并获取列表的第一个元素
+     *
+     * @param key 键
+     * @return 键对应的值
+     */
+    public Object rpop(String key) {
+        return redisTemplate.opsForList().rightPop(key);
+    }
+
+    /**
+     * 从列表中弹出一个值，将弹出的元素插入到另外一个列表中并返回它； 如果列表没有元素会阻塞列表直到等待超时或发现可弹出元素为止
+     *
+     * @param key1    键1
+     * @param key2    键2
+     * @param timeout 超时时间（秒）
+     * @return 键对应的值
+     */
+    public Object rpopLpush(String key1, String key2, long timeout) {
+        return redisTemplate.opsForList().rightPopAndLeftPush(key1, key2, timeout, TimeUnit.SECONDS);
+    }
+
+    /**
+     * 从列表中弹出一个值，将弹出的元素插入到另外一个列表中并返回它
+     *
+     * @param key1 键1
+     * @param key2 键2
+     * @return 键对应的值
+     */
+    public Object rpopLpush(String key1, String key2) {
+        return redisTemplate.opsForList().rightPopAndLeftPush(key1, key2);
+    }
+
+    /**
+     * 通过索引获取列表中的元素
+     *
+     * @param key   键
+     * @param index 索引  index>=0时， 0 表头，1 第二个元素，依次类推；index<0时，-1，表尾，-2倒数第二个元素，依次类推
+     * @return 索引位置对应的元素
+     */
+    public Object lGetIndex(String key, long index) {
+        return redisTemplate.opsForList().index(key, index);
+    }
+
+    /**
+     * 获取列表指定范围内的元素
      *
      * @param key   键
      * @param start 开始
      * @param end   结束  0 到 -1代表所有值
-     * @return
+     * @return 值的范围
      */
     public List<Object> lGet(String key, long start, long end) {
-        try {
-            return redisTemplate.opsForList().range(key, start, end);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
-        }
+        return redisTemplate.opsForList().range(key, start, end);
     }
 
     /**
      * 获取list缓存的长度
      *
      * @param key 键
-     * @return
+     * @return 列表的长度
      */
-    public long lGetListSize(String key) {
-        try {
-            return redisTemplate.opsForList().size(key);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return 0;
-        }
+    public Long lGetListSize(String key) {
+        return redisTemplate.opsForList().size(key);
     }
 
     /**
-     * 通过索引 获取list中的值
-     *
-     * @param key   键
-     * @param index 索引  index>=0时， 0 表头，1 第二个元素，依次类推；index<0时，-1，表尾，-2倒数第二个元素，依次类推
-     * @return
-     */
-    public Object lGetIndex(String key, long index) {
-        try {
-            return redisTemplate.opsForList().index(key, index);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
-        }
-    }
-
-    /**
-     * 将list放入缓存
+     * 从列表的右边插入元素
      *
      * @param key   键
      * @param value 值
-     * @return
+     * @return 插入的个数
      */
-    public boolean lSet(String key, Object value) {
-        try {
-            redisTemplate.opsForList().rightPush(key, value);
-            return true;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
-        }
+    public Long lrPush(String key, Object value) {
+        return redisTemplate.opsForList().rightPush(key, value);
     }
 
     /**
-     * 将list放入缓存
+     * 从列表的右边插入元素，并设置超时时间
      *
      * @param key   键
      * @param value 值
      * @param time  时间(秒)
-     * @return
      */
-    public boolean lSet(String key, Object value, long time) {
-        try {
-            redisTemplate.opsForList().rightPush(key, value);
-            if (time > 0) {
-                expire(key, time);
-            }
-            return true;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
-        }
+    public void lrPush(String key, Object value, long time) {
+        redisTemplate.opsForList().rightPush(key, value);
+        expire(key, time);
     }
 
     /**
-     * 将list放入缓存
+     * 从列表的右边插入多个元素
      *
-     * @param key   键
-     * @param value 值
-     * @return
+     * @param key    键
+     * @param values 值的列表
+     * @return 插入的个数
      */
-    public boolean lSet(String key, List<Object> value) {
-        try {
-            redisTemplate.opsForList().rightPushAll(key, value);
-            return true;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
-        }
+    public Long lrPushAll(String key, List<Object> values) {
+        return redisTemplate.opsForList().rightPushAll(key, values);
     }
 
     /**
-     * 将list放入缓存
+     * 从列表的右边插入元素，如果值不存在
      *
      * @param key   键
      * @param value 值
-     * @param time  时间(秒)
-     * @return
+     * @return 插入的个数
      */
-    public boolean lSet(String key, List<Object> value, long time) {
-        try {
-            redisTemplate.opsForList().rightPushAll(key, value);
-            if (time > 0) {
-                expire(key, time);
-            }
-            return true;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
-        }
+    public Long lrPushIfPresent(String key, Object value) {
+        return redisTemplate.opsForList().rightPushIfPresent(key, value);
+    }
+
+    /**
+     * 从列表的左边插入元素，如果值不存在
+     *
+     * @param key   键
+     * @param value 值
+     * @return 插入的个数
+     */
+    public Long llPushIfPresent(String key, Object value) {
+        return redisTemplate.opsForList().leftPushIfPresent(key, value);
+    }
+
+    /**
+     * 从列表的左边插入元素，插入列表的头部
+     *
+     * @param key   键
+     * @param value 值
+     * @return 插入的个数
+     */
+    public Long llPush(String key, Object value) {
+        return redisTemplate.opsForList().leftPush(key, value);
+    }
+
+    /**
+     * 从列表的左边插入元素，并设置超时时间
+     *
+     * @param key     键
+     * @param value   值
+     * @param timeout 超时时间（秒）
+     */
+    public void llPush(String key, Object value, long timeout) {
+        redisTemplate.opsForList().leftPush(key, value);
+        expire(key, timeout);
+    }
+
+    /**
+     * 从列表的左边插入多个元素
+     *
+     * @param key    键
+     * @param values 值的列表
+     * @return 插入的个数
+     */
+    public Long llPushAll(String key, List<Object> values) {
+        return redisTemplate.opsForList().leftPushAll(key, values);
     }
 
     /**
@@ -969,16 +1033,9 @@ public class RedisHandler {
      * @param key   键
      * @param index 索引
      * @param value 值
-     * @return
      */
-    public boolean lUpdateIndex(String key, long index, Object value) {
-        try {
-            redisTemplate.opsForList().set(key, index, value);
-            return true;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
-        }
+    public void lUpdateIndex(String key, long index, Object value) {
+        redisTemplate.opsForList().set(key, index, value);
     }
 
     /**
@@ -989,14 +1046,19 @@ public class RedisHandler {
      * @param value 值
      * @return 移除的个数
      */
-    public long lRemove(String key, long count, Object value) {
-        try {
-            Long remove = redisTemplate.opsForList().remove(key, count, value);
-            return remove;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return 0;
-        }
+    public Long lRemove(String key, long count, Object value) {
+        return redisTemplate.opsForList().remove(key, count, value);
+    }
+
+    /**
+     * 对一个列表进行修剪(trim)，就是说，让列表只保留指定区间内的元素，不在指定区间之内的元素都将被删除
+     *
+     * @param key   键
+     * @param start 开始位置
+     * @param end   结束为止
+     */
+    public void lTrim(String key, long start, long end) {
+        redisTemplate.opsForList().trim(key, start, end);
     }
     //===============================针对list的操作结束=================================
 
