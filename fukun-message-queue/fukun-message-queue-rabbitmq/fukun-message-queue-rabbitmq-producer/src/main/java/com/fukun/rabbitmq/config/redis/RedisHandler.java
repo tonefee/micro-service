@@ -604,106 +604,274 @@ public class RedisHandler {
 
     //================================针对Map的操作结束=================================
 
-    //============================针对set的操作开始（Redis的Set是string类型的无序集合，集合是通过哈希表实现的，所以添加，删除，查找的复杂度都是O(1)，集合中最大的成员数为 2^32 - 1 (4294967295, 每个集合可存储40多亿个成员)。）=============================
+    //============================针对set的操作开始（Redis的Set是string类型的无序集合，集合成员是唯一的，这就意味着集合中不能出现重复的数据，redis中的集合是通过哈希表实现的，所以添加，删除，查找的复杂度都是O(1)，集合中最大的成员数为 2^32 - 1 (4294967295, 每个集合可存储40多亿个成员)。）=============================
 
     /**
-     * 根据key获取Set中的所有值
+     * 根据key获取Set中的所有值，即返回集合中的所有成员
      *
      * @param key 键
-     * @return
+     * @return key对应set集合中的多个值
      */
     public Set<Object> sGet(String key) {
-        try {
-            return redisTemplate.opsForSet().members(key);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
-        }
+        return redisTemplate.opsForSet().members(key);
     }
 
     /**
-     * 根据value从一个set中查询,是否存在
+     * 根据value从一个set中查询,是否存在，即判断 member 元素是否是集合 key 的成员
      *
      * @param key   键
      * @param value 值
      * @return true 存在 false不存在
      */
-    public boolean sHasKey(String key, Object value) {
-        try {
-            return redisTemplate.opsForSet().isMember(key, value);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
-        }
+    public Boolean sHasKey(String key, Object value) {
+        return redisTemplate.opsForSet().isMember(key, value);
     }
 
     /**
-     * 将数据放入set缓存
+     * 向集合中添加一个或多个成员
      *
      * @param key    键
      * @param values 值 可以是多个
-     * @return 成功个数
+     * @return 插入的个数
      */
-    public long sSet(String key, Object... values) {
-        try {
-            return redisTemplate.opsForSet().add(key, values);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return 0;
-        }
+    public Long sAdd(String key, Object... values) {
+        return redisTemplate.opsForSet().add(key, values);
     }
 
     /**
-     * 将set数据放入缓存
+     * 向集合中添加一个或多个成员并设置超时时间
      *
      * @param key    键
      * @param time   时间(秒)
      * @param values 值 可以是多个
-     * @return 成功个数
      */
-    public long sSetAndTime(String key, long time, Object... values) {
-        try {
-            Long count = redisTemplate.opsForSet().add(key, values);
-            if (time > 0) {
-                expire(key, time);
-            }
-            return count;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return 0;
-        }
+    public void sAdd(String key, long time, Object... values) {
+        redisTemplate.opsForSet().add(key, values);
+        expire(key, time);
     }
 
     /**
-     * 获取set缓存的长度
+     * 返回给定所有集合的差集（比较多个key中的不同的值）
+     *
+     * @param key      键
+     * @param otherKey 其他键
+     * @return 差集
+     */
+    public Set<Object> sDiff(String key, String otherKey) {
+        return redisTemplate.opsForSet().difference(key, otherKey);
+    }
+
+    /**
+     * 返回给定所有集合的差集，对多个key进行比较（比较多个key中的不同的值）
+     *
+     * @param key       键
+     * @param otherKeys 多个键
+     * @return 差集
+     */
+    public Set<Object> sDiff(String key, List<String> otherKeys) {
+        return redisTemplate.opsForSet().difference(key, otherKeys);
+    }
+
+    /**
+     * 返回给定所有集合的差集并存储在 destination 中（比较多个key中的不同的值）
+     *
+     * @param key      键
+     * @param otherKey 其他键
+     * @param destKey  目标key
+     * @return 插入到key3中的差集个数
+     */
+    public Long sDiffStore(String key, String otherKey, String destKey) {
+        return redisTemplate.opsForSet().differenceAndStore(key, otherKey, destKey);
+    }
+
+    /**
+     * 返回给定所有集合的差集并存储在 destination 中，对多个key进行比较（比较多个key中的不同的值）
+     *
+     * @param key       键
+     * @param otherKeys 其他键
+     * @param destKey   目标key
+     * @return 插入到key3中的差集个数
+     */
+    public Long sDiffStore(String key, List<String> otherKeys, String destKey) {
+        return redisTemplate.opsForSet().differenceAndStore(key, otherKeys, destKey);
+    }
+
+    /**
+     * 返回给定所有集合的交集（比较多个key中的相同的值）
+     *
+     * @param key      键
+     * @param otherKey 其他键
+     * @return 交集
+     */
+    public Set<Object> sInter(String key, String otherKey) {
+        return redisTemplate.opsForSet().intersect(key, otherKey);
+    }
+
+    /**
+     * 返回给定所有集合的交集，对多个key进行比较（比较多个key中的相同的值）
+     *
+     * @param key       键
+     * @param otherKeys 其他多个键
+     * @return 交集
+     */
+    public Set<Object> sInter(String key, List<String> otherKeys) {
+        return redisTemplate.opsForSet().intersect(key, otherKeys);
+    }
+
+    /**
+     * 返回给定所有集合的交集并存储在 destination 中（比较多个key中的相同的值）
+     *
+     * @param key      键
+     * @param otherKey 其他键
+     * @param destKey  目标key
+     * @return 交集
+     */
+    public Long sInterStore(String key, String otherKey, String destKey) {
+        return redisTemplate.opsForSet().intersectAndStore(key, otherKey, destKey);
+    }
+
+    /**
+     * 返回给定所有集合的交集并存储在 destination 中，对多个key进行比较（比较多个key中的相同的值）
+     *
+     * @param key       键
+     * @param otherKeys 其他键
+     * @param destKey   目标key
+     * @return 交集
+     */
+    public Long sInterStore(String key, List<String> otherKeys, String destKey) {
+        return redisTemplate.opsForSet().intersectAndStore(key, otherKeys, destKey);
+    }
+
+    /**
+     * 返回所有给定集合的并集（合并多个key中值）
+     *
+     * @param key      键
+     * @param otherKey 其他键
+     * @return 并集
+     */
+    public Set<Object> sUnion(String key, String otherKey) {
+        return redisTemplate.opsForSet().union(key, otherKey);
+    }
+
+    /**
+     * 返回所有给定集合的并集（合并多个key中值）
+     *
+     * @param key       键
+     * @param otherKeys 其他键
+     * @return 并集
+     */
+    public Set<Object> sUnion(String key, List<String> otherKeys) {
+        return redisTemplate.opsForSet().union(key, otherKeys);
+    }
+
+    /**
+     * 所有给定集合的并集存储在 destination 集合中（合并多个key中值）
+     *
+     * @param key      键
+     * @param otherKey 其他键
+     * @param destKey  目标key
+     * @return 并集
+     */
+    public Long sUnionStore(String key, String otherKey, String destKey) {
+        return redisTemplate.opsForSet().unionAndStore(key, otherKey, destKey);
+    }
+
+    /**
+     * 所有给定集合的并集存储在 destination 集合中（合并多个key中值）
+     *
+     * @param key       键
+     * @param otherKeys 其他键
+     * @param destKey   目标key
+     * @return 并集
+     */
+    public Long sUnionStore(String key, List<String> otherKeys, String destKey) {
+        return redisTemplate.opsForSet().unionAndStore(key, otherKeys, destKey);
+    }
+
+    /**
+     * 将 value 元素从 source 集合移动到 destination 集合
+     *
+     * @param key     原key
+     * @param value   值
+     * @param destKey 目标键
+     * @return true 移动成功  false 移动失败
+     */
+    public Boolean sMove(String key, Object value, String destKey) {
+        return redisTemplate.opsForSet().move(key, value, destKey);
+    }
+
+    /**
+     * 移除并返回集合中的一个随机元素
      *
      * @param key 键
-     * @return
+     * @return 随机元素值
      */
-    public long sGetSetSize(String key) {
-        try {
-            return redisTemplate.opsForSet().size(key);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return 0;
-        }
+    public Object sPop(String key) {
+        return redisTemplate.opsForSet().pop(key);
     }
 
     /**
-     * 移除值为value的
+     * 移除并返回集合中的多个随机元素
+     *
+     * @param key   键
+     * @param count 数量
+     * @return 随机元素值列表
+     */
+    public List<Object> sPop(String key, long count) {
+        return redisTemplate.opsForSet().pop(key, count);
+    }
+
+    /**
+     * 返回集合中一个随机数但是不移除
+     *
+     * @param key 键
+     * @return 随机元素值
+     */
+    public Object sRandomMembers(String key) {
+        return redisTemplate.opsForSet().randomMember(key);
+    }
+
+    /**
+     * 返回集合中多个随机数但是不移除
+     *
+     * @param key   键
+     * @param count 数量
+     * @return 随机元素值列表
+     */
+    public List<Object> sRandomMembers(String key, long count) {
+        return redisTemplate.opsForSet().randomMembers(key, count);
+    }
+
+    /**
+     * 返回集合中多个随机数但是不移除并且不重复获取
+     *
+     * @param key   键
+     * @param count 数量
+     * @return 随机元素值列表
+     */
+    public Set<Object> sDistinctRandomMembers(String key, long count) {
+        return redisTemplate.opsForSet().distinctRandomMembers(key, count);
+    }
+
+    /**
+     * 获取set集合的大小
+     *
+     * @param key 键
+     * @return 集合的大小
+     */
+    public Long sGetSetSize(String key) {
+        return redisTemplate.opsForSet().size(key);
+    }
+
+    /**
+     * 移除集合中的元素
      *
      * @param key    键
      * @param values 值 可以是多个
      * @return 移除的个数
      */
-    public long setRemove(String key, Object... values) {
-        try {
-            Long count = redisTemplate.opsForSet().remove(key, values);
-            return count;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return 0;
-        }
+    public Long sRemove(String key, Object... values) {
+        return redisTemplate.opsForSet().remove(key, values);
     }
 
     //============================针对set的操作结束=============================
