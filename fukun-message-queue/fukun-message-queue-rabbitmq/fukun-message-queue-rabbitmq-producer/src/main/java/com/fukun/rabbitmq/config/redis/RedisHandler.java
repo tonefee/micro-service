@@ -884,21 +884,32 @@ public class RedisHandler {
      * @param key   键
      * @param value 值
      * @param score 分数
-     * @return 添加成功与否
+     * @return 添加成功与否，true 添加成功 false 添加失败
      */
     public Boolean zsetAdd(String key, String value, double score) {
         return redisTemplate.opsForZSet().add(key, value, score);
     }
 
     /**
-     * 删除元素
+     * 获取有序集合的成员数
      *
-     * @param key   键
-     * @param value 值
-     * @return 删除的元素数目
+     * @param key 键
+     * @return 有序集合的成员数
      */
-    public long zsetRemove(String key, String value) {
-        return redisTemplate.opsForZSet().remove(key, value);
+    public Long zsetSize(String key) {
+        return redisTemplate.opsForZSet().zCard(key);
+    }
+
+    /**
+     * 计算在有序集合中指定区间分数的成员数
+     *
+     * @param key 键
+     * @param min 最小分数
+     * @param max 最大分数
+     * @return 指定区间分数的成员数
+     */
+    public Long zsetCount(String key, double min, double max) {
+        return redisTemplate.opsForZSet().count(key, min, max);
     }
 
     /**
@@ -916,6 +927,167 @@ public class RedisHandler {
     }
 
     /**
+     * 计算给定的一个或多个有序集的交集并将结果集存储在新的有序集合 key 中
+     *
+     * @param key      键
+     * @param otherKey 其他键
+     * @param destKey  目标键
+     * @return 插入到目标key对应的集合中的交集个数
+     */
+    public Long zsetInterStore(String key, String otherKey, String destKey) {
+        return redisTemplate.opsForZSet().intersectAndStore(key, otherKey, destKey);
+    }
+
+    /**
+     * 计算给定的一个或多个有序集的交集并将结果集存储在新的有序集合 key 中
+     *
+     * @param key       键
+     * @param otherKeys 其他键
+     * @param destKey   目标键
+     * @return 插入到目标key对应的集合中的交集个数
+     */
+    public Long zsetInterStore(String key, List<String> otherKeys, String destKey) {
+        return redisTemplate.opsForZSet().intersectAndStore(key, otherKeys, destKey);
+    }
+
+    /**
+     * 计算给定的一个或多个有序集的并集并将结果集存储在新的有序集合 key 中
+     *
+     * @param key      键
+     * @param otherKey 其他键
+     * @param destKey  目标键
+     * @return 插入到目标key对应的集合中的并集个数
+     */
+    public Long zsetUnionStore(String key, String otherKey, String destKey) {
+        return redisTemplate.opsForZSet().unionAndStore(key, otherKey, destKey);
+    }
+
+    /**
+     * 计算给定的一个或多个有序集的并集并将结果集存储在新的有序集合 key 中
+     *
+     * @param key       键
+     * @param otherKeys 其他键
+     * @param destKey   目标键
+     * @return 插入到目标key对应的集合中的并集个数
+     */
+    public Long zsetUnionStore(String key, List<String> otherKeys, String destKey) {
+        return redisTemplate.opsForZSet().unionAndStore(key, otherKeys, destKey);
+    }
+
+    /**
+     * 通过索引区间返回有序集合成指定区间内的成员
+     * 查询集合中指定顺序的值， 0 -1 表示获取全部的集合内容  zrange
+     * 返回有序的集合，score小的在前面
+     *
+     * @param key   键
+     * @param start 开始位置
+     * @param end   结束位置
+     * @return 有序集合
+     */
+    public Set<Object> zsetRange(String key, long start, long end) {
+        return redisTemplate.opsForZSet().range(key, start, end);
+    }
+
+    /**
+     * 返回有序集中指定区间内的成员，通过索引，分数从高到底
+     * 查询集合中指定顺序的值， 0 -1 表示获取全部的集合内容  zrange
+     * 返回有序的集合，score小的在前面
+     *
+     * @param key   键
+     * @param start 开始位置
+     * @param end   结束位置
+     * @return 有序集合
+     */
+    public Set<Object> zsetReverseRange(String key, long start, long end) {
+        return redisTemplate.opsForZSet().reverseRange(key, start, end);
+    }
+
+    /**
+     * 通过分数返回有序集合指定区间内的成员
+     * 返回有序的集合，score小的在前面
+     *
+     * @param key   键
+     * @param start 开始位置
+     * @param end   结束位置
+     * @return 有序集合
+     */
+    public Set<Object> zsetRangeByScore(String key, double start, double end) {
+        return redisTemplate.opsForZSet().rangeByScore(key, start, end);
+    }
+
+    /**
+     * 返回有序集中指定分数区间内的成员，分数从高到低排序
+     * 返回有序的集合，score小的在前面
+     *
+     * @param key   键
+     * @param start 开始位置
+     * @param end   结束位置
+     * @return 有序集合
+     */
+    public Set<Object> zsetReverseRangeByScore(String key, double start, double end) {
+        return redisTemplate.opsForZSet().reverseRangeByScore(key, start, end);
+    }
+
+    /**
+     * 返回有序集合中指定成员的索引
+     * 获取排名；这里score越小排名越高;
+     * 用zset来做排行榜可以很简单的获取某个用户在所有人中的排名与积分
+     *
+     * @param key   键
+     * @param value 值
+     * @return 排名
+     */
+    public Long zsetRank(String key, Object value) {
+        return redisTemplate.opsForZSet().rank(key, value);
+    }
+
+    /**
+     * 返回有序集合中指定成员的排名，有序集成员按分数值递减(从大到小)排序
+     *
+     * @param key   键
+     * @param value 值
+     * @return 排名
+     */
+    public Long zsetReverseRank(String key, Object value) {
+        return redisTemplate.opsForZSet().reverseRank(key, value);
+    }
+
+    /**
+     * 移除有序集合中的一个或多个成员
+     *
+     * @param key    键
+     * @param values 多个值
+     * @return 删除的元素数目
+     */
+    public Long zsetRemove(String key, Object... values) {
+        return redisTemplate.opsForZSet().remove(key, values);
+    }
+
+    /**
+     * 移除有序集合中给定的分数区间的所有成员
+     *
+     * @param key 键
+     * @param min 最小分数
+     * @param max 最大分数
+     * @return 删除的元素数目
+     */
+    public Long zsetRemoveRangeByScore(String key, double min, double max) {
+        return redisTemplate.opsForZSet().removeRangeByScore(key, min, max);
+    }
+
+    /**
+     * 移除有序集合中给定的索引区间的所有成员
+     *
+     * @param key 键
+     * @param min 最小分数
+     * @param max 最大分数
+     * @return 删除的元素数目
+     */
+    public Long zsetRemoveRange(String key, long min, long max) {
+        return redisTemplate.opsForZSet().removeRange(key, min, max);
+    }
+
+    /**
      * 查询value对应的score, zscore
      * 当value在集合中时，返回其score；如果不在，则返回null
      *
@@ -928,44 +1100,6 @@ public class RedisHandler {
     }
 
     /**
-     * 判断value在zset中的排名  zrank
-     * 获取排名；这里score越小排名越高;
-     * 用zset来做排行榜可以很简单的获取某个用户在所有人中的排名与积分
-     *
-     * @param key   键
-     * @param value 值
-     * @return 排名
-     */
-    public Long zsetRank(String key, String value) {
-        return redisTemplate.opsForZSet().rank(key, value);
-    }
-
-    /**
-     * 返回集合的长度
-     *
-     * @param key 键
-     * @return 集合大小
-     */
-    public Long zsetSize(String key) {
-        return redisTemplate.opsForZSet().zCard(key);
-    }
-
-    /**
-     * 因为是有序，所以就可以获取指定范围的数据
-     * 查询集合中指定顺序的值， 0 -1 表示获取全部的集合内容  zrange
-     * <p>
-     * 返回有序的集合，score小的在前面
-     *
-     * @param key   键
-     * @param start 开始位置
-     * @param end   结束位置
-     * @return 有序集合
-     */
-    public Set<Object> zsetRange(String key, int start, int end) {
-        return redisTemplate.opsForZSet().range(key, start, end);
-    }
-
-    /**
      * 查询集合中指定顺序的值和score，0, -1 表示获取全部的集合内容
      *
      * @param key   键
@@ -973,34 +1107,8 @@ public class RedisHandler {
      * @param end   结束位置
      * @return 有序集合
      */
-    public Set<ZSetOperations.TypedTuple<Object>> rangeWithScore(String key, int start, int end) {
+    public Set<ZSetOperations.TypedTuple<Object>> rangeWithScore(String key, long start, long end) {
         return redisTemplate.opsForZSet().rangeWithScores(key, start, end);
-    }
-
-    /**
-     * 查询集合中指定顺序的值  zrevrange
-     * <p>
-     * 返回有序的集合中，score大的在前面
-     *
-     * @param key   键
-     * @param start 开始位置
-     * @param end   结束位置
-     * @return 有序集合
-     */
-    public Set<Object> revRange(String key, int start, int end) {
-        return redisTemplate.opsForZSet().reverseRange(key, start, end);
-    }
-
-    /**
-     * 根据score的值，来获取满足条件的集合  zrangebyscore
-     *
-     * @param key 键
-     * @param min 最小
-     * @param max 最大
-     * @return 有序集合
-     */
-    public Set<Object> sortRange(String key, int min, int max) {
-        return redisTemplate.opsForZSet().rangeByScore(key, min, max);
     }
 
     //============================针对zset的操作结束=============================
