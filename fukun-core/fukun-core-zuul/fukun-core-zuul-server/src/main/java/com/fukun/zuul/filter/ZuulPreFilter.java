@@ -3,6 +3,7 @@ package com.fukun.zuul.filter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.zuul.ZuulFilter;
 import com.netflix.zuul.context.RequestContext;
+import io.micrometer.core.instrument.util.IOUtils;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.netflix.zuul.filters.route.FallbackProvider;
@@ -12,12 +13,15 @@ import org.springframework.http.MediaType;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.stereotype.Component;
 
+import javax.servlet.ServletInputStream;
 import javax.servlet.http.HttpServletRequest;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * 自定义过滤器，需要继承ZuulFilter的类，并覆盖其中的4个方法
@@ -31,7 +35,9 @@ import java.util.Map;
  */
 @Slf4j
 @Component
-public class CustomZuulFilter extends ZuulFilter implements FallbackProvider {
+public class ZuulPreFilter extends ZuulFilter implements FallbackProvider {
+
+    private static final String GET_METHOD = "GET";
 
     /**
      * 熔断拦截哪个服务，告诉Zuul它是负责哪个route定义的熔断。
@@ -167,9 +173,65 @@ public class CustomZuulFilter extends ZuulFilter implements FallbackProvider {
      */
     @Override
     public Object run() {
-        RequestContext ctx = RequestContext.getCurrentContext();
+        //Zull获取请求信息
+        final RequestContext ctx = RequestContext.getCurrentContext();
+        // 开启zuul的调试模式
+        ctx.setDebugRouting(true);
+        ctx.setDebugRequest(true);
         HttpServletRequest request = ctx.getRequest();
-        log.info(String.format("%s request to %s", request.getMethod(), request.getRequestURL().toString()));
+        if (log.isInfoEnabled()) {
+            log.info("REQUEST:: {} {}:{}", request.getScheme(), request.getRemoteAddr(), request.getRemotePort());
+        }
+        StringBuilder params = new StringBuilder("?");
+        // 获取URL参数
+        Enumeration<String> names = request.getParameterNames();
+        if (request.getMethod().equals(GET_METHOD)) {
+            while (names.hasMoreElements()) {
+                String name = names.nextElement();
+                params.append(name);
+                params.append("=");
+                params.append(request.getParameter(name));
+                params.append("&");
+            }
+        }
+
+        if (params.length() > 0) {
+            params.delete(params.length() - 1, params.length());
+        }
+
+        if (log.isInfoEnabled()) {
+            log.info("REQUEST:: > {} {} {} {}", request.getMethod(), request.getRequestURL(), params, request.getProtocol());
+        }
+
+        Enumeration<String> headers = request.getHeaderNames();
+        while (headers.hasMoreElements()) {
+            String name = headers.nextElement();
+            String value = request.getHeader(name);
+            if (log.isInfoEnabled()) {
+                log.info("REQUEST:: > {}:{}", name, value);
+            }
+        }
+
+        // 获取请求体参数
+        if (!ctx.isChunkedRequestBody()) {
+            ServletInputStream inp;
+            try {
+                inp = ctx.getRequest().getInputStream();
+                String body;
+                if (null != inp) {
+                    body = IOUtils.toString(inp);
+                    if (log.isInfoEnabled()) {
+                        log.info("REQUEST:: > {}", body);
+                    }
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+                if (log.isInfoEnabled()) {
+                    log.error("出现IO异常！");
+                }
+            }
+        }
+
         // 获取token参数
         Object accessToken = request.getParameter("token");
         if (accessToken == null) {
@@ -181,9 +243,9 @@ public class CustomZuulFilter extends ZuulFilter implements FallbackProvider {
             // 返回错误内容
             ctx.setResponseBody("token is null!");
             // Zuul还未对返回数据做处理
-            return null;
+            return Optional.empty();
         }
         log.info("ok");
-        return null;
+        return Optional.empty();
     }
 }
