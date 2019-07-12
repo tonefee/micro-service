@@ -165,7 +165,221 @@ ribbon.MaxAutoRetriesNextServer=0
 为了保证Zuul的高可用性，前端可以同时启动多个Zuul实例进行负载，在Zuul的前端使用Nginx或者F5进行负载转发以达到高可用性。   
 
  ![服务网关](pictures/p8.png)  
+ 
+# 请求响应信息输出
 
+## 获取请求信息
+系统在生产环境出现问题时，排查问题最好的方式就是查看日志了，日志的记录尽量详细，这样你才能快速定位问题。  
+下面带大家学习如何在Zuul中输出请求响应的信息来辅助我们解决一些问题。  
+熟悉Zuul的朋友都知道，Zuul中有4种类型过滤器，每种都有特定的使用场景，
+要想记录响应数据，那么必须是在请求路由到了具体的服务之后，返回了才有数据，这种需求就适合用post过滤器来实现了。  
+在请求被路由到微服务之前，日志输出请求详细的信息，在 ZuulPreFilter 过滤器类中添加如下的内容：  
+
+``` 
+        //Zull获取请求信息
+        final RequestContext ctx = RequestContext.getCurrentContext();
+        // 开启zuul的调试模式
+        ctx.setDebugRouting(true);
+        ctx.setDebugRequest(true);
+        HttpServletRequest request = ctx.getRequest();
+        if (log.isInfoEnabled()) {
+            log.info("REQUEST:: {} {}:{}", request.getScheme(), request.getRemoteAddr(), request.getRemotePort());
+        }
+        StringBuilder params = new StringBuilder("?");
+        // 获取URL参数
+        Enumeration<String> names = request.getParameterNames();
+        if (request.getMethod().equals(GET_METHOD)) {
+            while (names.hasMoreElements()) {
+                String name = names.nextElement();
+                params.append(name);
+                params.append("=");
+                params.append(request.getParameter(name));
+                params.append("&");
+            }
+        }
+
+        if (params.length() > 0) {
+            params.delete(params.length() - 1, params.length());
+        }
+
+        if (log.isInfoEnabled()) {
+            log.info("REQUEST:: > {} {} {} {}", request.getMethod(), request.getRequestURL(), params, request.getProtocol());
+        }
+
+        Enumeration<String> headers = request.getHeaderNames();
+        while (headers.hasMoreElements()) {
+            String name = headers.nextElement();
+            String value = request.getHeader(name);
+            if (log.isInfoEnabled()) {
+                log.info("REQUEST:: > {}:{}", name, value);
+            }
+        }
+
+        // 获取请求体参数
+        if (!ctx.isChunkedRequestBody()) {
+            ServletInputStream inp;
+            try {
+                inp = ctx.getRequest().getInputStream();
+                String body;
+                if (null != inp) {
+                    body = IOUtils.toString(inp);
+                    if (log.isInfoEnabled()) {
+                        log.info("REQUEST:: > {}", body);
+                    }
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+                if (log.isInfoEnabled()) {
+                    log.error("出现IO异常！");
+                }
+            }
+        }
+```
+添加如上代码后，当路由访问某个资源时，就会打印以上配置的请求信息。  
+
+## 获取响应信息
+
+在 ZuulPostFilter 过滤器中添加打印响应信息的逻辑，注意该过滤器的优先级要设置比
+ZuulPreFilter 中配置的优先级要低，如下：  
+
+```  
+
+package com.fukun.zuul.filter;
+
+import com.netflix.zuul.ZuulFilter;
+import com.netflix.zuul.context.RequestContext;
+import io.micrometer.core.instrument.util.IOUtils;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
+
+import java.io.InputStream;
+import java.util.Optional;
+
+/**
+ * 自定义过滤器，需要继承ZuulFilter的类，并覆盖其中的4个方法
+ * 比如：我们可以定制一种STATIC类型的过滤器，直接在Zuul中生成响应，
+ * 而不将请求转发到后端的微服务。
+ * 网关过滤器，对请求进行拦截与过滤
+ *
+ * @author tangyifei
+ * @since 2019-6-13 15:14:27
+ * @since jdk1.8
+ */
+@Slf4j
+@Component
+public class ZuulPostFilter extends ZuulFilter {
+
+    /**
+     * 4种过滤器类型,
+     * 　　pre；可以在请求被路由之前调用，可利用这种过滤器实现身份验证、在集群中选择请求的微服务、记录调试信息等。
+     * 　　routing：在路由请求时候被调用，这种过滤器将请求路由到微服务。这种过滤器用于构建发送给微服务的请求，并使用Apache HttpClient或Netfilx Ribbon请求微服务。
+     * 　　post：在route和error过滤器之后被调用，这种过滤器在路由到微服务以后执行。这种过滤器可用来为响应添加标准的HTTP Header、收集统计信息和指标、将响应从微服务发送给客户端等。
+     * 　　error：处理请求时发生错误时被调用，在其他阶段发生错误时执行该过滤器。
+     *
+     * @return 过滤器类型
+     */
+    @Override
+    public String filterType() {
+        return "post";
+    }
+
+    /**
+     * 优先级为1，数字越大，优先级越低，越后执行
+     *
+     * @return 优先级
+     */
+    @Override
+    public int filterOrder() {
+        return 1;
+    }
+
+    /**
+     * 是否执行该过滤器，此处为true，说明需要过滤并执行，为false，表示不执行
+     *
+     * @return 是否应当过滤
+     */
+    @Override
+    public boolean shouldFilter() {
+        return true;
+    }
+
+    /**
+     * 过滤微服务端的响应内容
+     *
+     * @return 过滤后的响应
+     */
+    @Override
+    public Object run() {
+        InputStream stream = RequestContext.getCurrentContext().getResponseDataStream();
+        if (null != stream) {
+            String body = IOUtils.toString(stream);
+            if (log.isInfoEnabled()) {
+                log.info("RESPONSE:: > {}", body);
+            }
+            RequestContext.getCurrentContext().setResponseBody(body);
+        }
+        return Optional.empty();
+    }
+}
+
+```
+# RequestContext中的调试信息作为响应头输出
+首先开启调试功能，如下：  
+
+```
+final RequestContext ctx = RequestContext.getCurrentContext();
+// 开启zuul的调试模式
+ctx.setDebugRouting(true);
+ctx.setDebugRequest(true);
+```
+在配置文件中增加下面的配置即可：  
+zuul.include-debug-header=true  
+
+查看响应头中的调试信息，如下：  
+
+![服务网关](pictures/p9.png)  
+
+# 文件上传
+通过Zuul上传文件，如果超过1M需要配置上传文件的大小, Zuul和上传的服务都要加上配置： 
+ 
+spring.servlet.multipart.max-file-size=1000Mb  
+spring.servlet.multipart.max-request-size=1000Mb  
+
+在zuul这边还有一种方式，在网关的请求地址前面加上/zuul，就可以绕过Spring DispatcherServlet进行上传大文件。  
+
+正常的地址  
+http://localhost:2103/zuul-file-demo/file/upload  
+绕过的地址  
+http://localhost:2103/zuul/zuul-file-demo/file/upload  
+
+`通过加上/zuul前缀可以让Zuul服务不用配置文件上传大小，但是接收文件的服务还是需要配置文件上传大小，否则文件还是会上传失败。`
+
+在上传大文件的时候，时间比较会比较长，这个时候需要设置合理的超时时间来避免超时。  
+  
+ribbon.ConnectTimeout=3000  
+ribbon.ReadTimeout=60000  
+
+在Hystrix隔离模式为线程下zuul.ribbon-isolation-strategy=thread，需要设置Hystrix超时时间。  
+  
+hystrix.command.default.execution.isolation.thread.timeoutInMilliseconds=60000    
+
+温馨提示：  
+
+当@EnableZuulProxy与Spring Boot Actuator配合使用时，Zuul会暴露一个路由管理端点/routes。  
+借助这个端点，可以方便、直观地查看以及管理Zuul的路由。  
+将所有端点都暴露出来，增加下面的配置:  
+
+management.endpoints.web.exposure.include=*  
+
+访问 http://localhost:8888/actuator/routes 可以显示所有路由信息：  
+
+![服务网关](pictures/p10.png)   
+
+/fliters端点会返回Zuul中所有过滤器的信息。可以清楚的了解Zuul中目前有哪些过滤器，哪些被禁用了等详细信息。  
+
+访问 http://localhost:8888/actuator/filters 可以显示所有过滤器信息：  
+
+![服务网关](pictures/p11.png)    
 
 
 
