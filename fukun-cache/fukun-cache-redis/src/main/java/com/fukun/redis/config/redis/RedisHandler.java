@@ -974,7 +974,7 @@ public class RedisHandler {
     }
 
     /**
-     * 通过索引区间返回有序集合成指定区间内的成员
+     * 通过索引区间正序返回有序集合成指定区间内的成员
      * 查询集合中指定顺序的值， 0 -1 表示获取全部的集合内容  zrange
      * 返回有序的集合，score小的在前面
      *
@@ -988,21 +988,21 @@ public class RedisHandler {
     }
 
     /**
-     * 返回有序集中指定区间内的成员，通过索引，分数从高到底
+     * 倒序返回有序集中指定区间内的成员，通过索引，分数从高到低
      * 查询集合中指定顺序的值， 0 -1 表示获取全部的集合内容  zrange
-     * 返回有序的集合，score小的在前面
+     * 返回有序的集合，score大的在前面
      *
      * @param key   键
      * @param start 开始位置
      * @param end   结束位置
      * @return 有序集合
      */
-    public Set<Object> zsetReverseRange(String key, long start, long end) {
+    public Set<Object> zgetReverseRange(String key, long start, long end) {
         return redisTemplate.opsForZSet().reverseRange(key, start, end);
     }
 
     /**
-     * 通过分数返回有序集合指定区间内的成员
+     * 通过分数正序返回有序集合指定区间内的成员
      * 返回有序的集合，score小的在前面
      *
      * @param key   键
@@ -1010,20 +1010,20 @@ public class RedisHandler {
      * @param end   结束位置
      * @return 有序集合
      */
-    public Set<Object> zsetRangeByScore(String key, double start, double end) {
+    public Set<Object> zgetRangeByScore(String key, double start, double end) {
         return redisTemplate.opsForZSet().rangeByScore(key, start, end);
     }
 
     /**
-     * 返回有序集中指定分数区间内的成员，分数从高到低排序
-     * 返回有序的集合，score小的在前面
+     * 倒序返回有序集中指定分数区间内的成员，分数从高到低排序，这个跟索引倒序有区别的
+     * 返回有序的集合，score大的在前面
      *
      * @param key   键
      * @param start 开始位置
      * @param end   结束位置
      * @return 有序集合
      */
-    public Set<Object> zsetReverseRangeByScore(String key, double start, double end) {
+    public Set<Object> zgetReverseRangeByScore(String key, double start, double end) {
         return redisTemplate.opsForZSet().reverseRangeByScore(key, start, end);
     }
 

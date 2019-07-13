@@ -473,7 +473,7 @@ public class RedisTests {
     }
 
     /**
-     * 通过索引区间返回有序集合成指定区间内的成员，注意不是分数的区间
+     * 通过索引区间正序返回有序集合成指定区间内的成员，注意不是分数的区间，score小的在前面，分数由低到高
      */
     @Test
     public void testZgetRange() {
@@ -483,7 +483,57 @@ public class RedisTests {
         Set<Object> results = redisHandler.zgetRange("fukun:subject", 0, 2);
         if (!CollectionUtils.isEmpty(results)) {
             for(Object s : results) {
-                System.out.println("成绩在70至79的科目：" + s);
+                System.out.println("成绩在70至79的科目，分数由低到高：" + s);
+                System.out.println("=============================");
+            }
+
+        }
+    }
+
+    /**
+     * 通过索引区间倒序返回有序集合成指定区间内的成员，注意不是分数的区间，通过索引，分数从高到底，score大的在前面
+     */
+    @Test
+    public void testZsetReverseRange() {
+        // 下面是获取全部的，0 -1 表示获取全部的集合内容
+        //Set<Object> results = redisHandler.zgetRange("fukun:subject", 0, -1);
+        // 获取索引在0至2的科目，注意不是分数的区间
+        Set<Object> results = redisHandler.zgetReverseRange("fukun:subject", 0, 2);
+        if (!CollectionUtils.isEmpty(results)) {
+            for(Object s : results) {
+                System.out.println("成绩在70至79的科目，分数由高到低：" + s);
+                System.out.println("=============================");
+            }
+
+        }
+    }
+
+    /**
+     * 通过分数正序返回有序集合指定区间内的成员
+     */
+    @Test
+    public void testZgetRangeByScore() {
+        // 获取索引在70至79的科目
+        Set<Object> results = redisHandler.zgetRangeByScore("fukun:subject", 70, 79);
+        if (!CollectionUtils.isEmpty(results)) {
+            for(Object s : results) {
+                System.out.println("成绩在70至79的科目，分数由低到高：" + s);
+                System.out.println("=============================");
+            }
+
+        }
+    }
+
+    /**
+     * 通过分数倒序返回有序集合指定区间内的成员
+     */
+    @Test
+    public void testZgetReverseRangeByScore() {
+        // 获取索引在70至79的科目
+        Set<Object> results = redisHandler.zgetReverseRangeByScore("fukun:subject", 70, 79);
+        if (!CollectionUtils.isEmpty(results)) {
+            for(Object s : results) {
+                System.out.println("成绩在70至79的科目，分数由高到低：" + s);
                 System.out.println("=============================");
             }
 
