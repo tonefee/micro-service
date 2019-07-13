@@ -17,6 +17,7 @@
         <module>fukun-core</module>
         <module>fukun-distribute-transaction</module>
         <module>fukun-message-queue</module>
+        <module>fukun-cache</module>
     </modules>
 
     <!--    <repositories>
