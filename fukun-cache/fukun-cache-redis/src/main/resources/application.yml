@@ -1,0 +1,24 @@
+spring:
+  application:
+     name: fukun-cache-redis
+  redis:
+     database: 0
+     host: 192.168.0.52
+     password: wd123
+     port: 6379
+     timeout: 6000
+     jedis:
+       pool:
+         max-idle: 50
+         min-idle: 8
+         max-active: 500
+         max-wait: 5
+         test-on-create: false
+         test-on-borrow: true
+         test-on-return: false
+         test-while-idle: true
+    
+
+
+
+
