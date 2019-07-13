@@ -983,7 +983,7 @@ public class RedisHandler {
      * @param end   结束位置
      * @return 有序集合
      */
-    public Set<Object> zsetRange(String key, long start, long end) {
+    public Set<Object> zgetRange(String key, long start, long end) {
         return redisTemplate.opsForZSet().range(key, start, end);
     }
 
