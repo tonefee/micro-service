@@ -539,4 +539,138 @@ public class RedisTests {
 
         }
     }
+
+    /**
+     * 返回有序集合中指定成员的索引，有序集成员按分数值递增(从小到大)排序
+     */
+    @Test
+    public void testZgetRank() {
+        System.out.println("获取的有序集合中的指定成员的索引是：" + redisHandler.zgetRank("fukun:subject", "chinese"));
+    }
+
+    /**
+     * 返回有序集合中指定成员的排名，有序集成员按分数值递减(从大到小)排序
+     */
+    @Test
+    public void testZgetReverseRank() {
+        System.out.println("获取的有序集合中的指定成员的索引是：" + redisHandler.zgetReverseRank("fukun:subject", "chinese"));
+    }
+
+    /**
+     * 查询value对应的score, zscore，value在集合中时，返回其score；如果不在，则返回null
+     */
+    @Test
+    public void testZgetScore() {
+        System.out.println("value对应的score是：" + redisHandler.zgetScore("fukun:subject", "chinese"));
+    }
+
+    //============================针对list列表的操作=============================
+
+    /**
+     * 从列表的右边插入元素
+     */
+    @Test
+    public void testLrPush() {
+        redisHandler.lrPush("fukun:product", "洗衣机");
+        redisHandler.lrPush("fukun:product", "彩电");
+        redisHandler.lrPush("fukun:product", "冰箱");
+        redisHandler.lrPush("fukun:product", "空调");
+    }
+
+    /**
+     * 从列表的右边插入元素，如果值存在
+     */
+    @Test
+    public void testLrPushIfPresent() {
+        redisHandler.lrPushIfPresent("fukun:company", "公司1");
+        redisHandler.lrPushIfPresent("fukun:company", "公司2");
+        redisHandler.lrPushIfPresent("fukun:company", "公司3");
+        redisHandler.lrPushIfPresent("fukun:company", "公司4");
+    }
+
+    /**
+     * 从列表的左边插入元素，如果值存在
+     */
+    @Test
+    public void testLLPushIfPresent() {
+        redisHandler.llPushIfPresent("fukun:company", "公司1");
+        redisHandler.llPushIfPresent("fukun:company", "公司2");
+        redisHandler.llPushIfPresent("fukun:company", "公司3");
+        redisHandler.llPushIfPresent("fukun:company", "公司4");
+    }
+
+    /**
+     * 从列表的左边插入元素
+     */
+    @Test
+    public void testLlPush() {
+        redisHandler.llPush("fukun:product", "洗衣机");
+        redisHandler.llPush("fukun:product", "彩电");
+        redisHandler.llPush("fukun:product", "冰箱");
+        redisHandler.llPush("fukun:product", "空调");
+    }
+
+    /**
+     * 根据索引修改list中的某条数据
+     */
+    @Test
+    public void testLUpdateIndex() {
+        redisHandler.lUpdateIndex("fukun:product", 2, "电脑");
+    }
+
+    /**
+     * 移除N个值为value
+     */
+    @Test
+    public void testLRemove() {
+        redisHandler.lrPush("fukun:company", "公司1");
+        redisHandler.lrPush("fukun:company", "公司2");
+        redisHandler.lrPush("fukun:company", "公司3");
+        redisHandler.lrPush("fukun:company", "公司4");
+        redisHandler.lrPush("fukun:company", "公司4");
+        redisHandler.lrPush("fukun:company", "公司4");
+        redisHandler.lRemove("fukun:company", 2, "公司4");
+    }
+
+    /**
+     * 对一个列表进行修剪(trim)，就是说，让列表只保留指定区间内的元素，不在指定区间之内的元素都将被删除
+     */
+    @Test
+    public void testLTrim() {
+        redisHandler.lTrim("fukun:company", 0, 2);
+    }
+
+    /**
+     * 获取list缓存的长度
+     */
+    @Test
+    public void testLGetListSize() {
+        System.out.println("缓存的长度是：" + redisHandler.lGetListSize("fukun:company"));
+    }
+
+    /**
+     * 获取列表指定范围内的元素
+     */
+    @Test
+    public void testLGet() {
+        List<Object> list = redisHandler.lGet("fukun:company", 0, 2);
+        if (!CollectionUtils.isEmpty(list)) {
+            for(int i = 0, size = list.size(); i < size; i++) {
+                System.out.println("元素：" + list.get(i));
+                System.out.println("++++++++++++++++++++++++++++++++++");
+            }
+        }
+    }
+
+    /**
+     * 从列表的左边移出并获取列表的第一个元素
+     */
+    @Test
+    public void testLpop() {
+        System.out.println("从列表的左边移出并获取列表的第一个元素：" + redisHandler.lpop("fukun:company"));
+    }
+
+    // 说明：其他的redis的操作根据具体的业务场景合理选择，这里不再测试
+
+
 }
