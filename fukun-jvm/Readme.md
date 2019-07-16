@@ -3,7 +3,9 @@
 [IDEA Java性能分析插件VisualVM Launcher 配置](https://blog.csdn.net/wngpenghao/article/details/82884874)  
 idea安装完成后，idea中会出现如下的两个按钮：   
 ![jvm性能调试](pictures/p1.png)    
-然后启动程序，注意点击上面那个红色底纹的启动按钮，随着程序的启动，Java VisualVM 也随之开启。   
+然后启动程序，注意点击上面那个红色底纹的启动按钮，注意配置jvm的参数，如下：  
+![jvm性能调试](pictures/p20.png)  
+随着程序的启动，Java VisualVM 也随之开启。   
 ![jvm性能调试](pictures/p2.png)    
 然后打开idea的终端，使用jps查看启动的jvm的进程号，或者在 Java VisualVM 也能看到进程号，用 jstat 查看内存布局，输入命令    
 jstat -gcutil 15264 200 3   
