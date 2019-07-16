@@ -1,0 +1,17 @@
+spring:
+  application:
+     name: fukun-jvm
+  profiles:
+    active: dev
+
+server:
+   servlet:
+      context-path: /fukun-jvm
+
+server.port: 8003
+
+
+
+
+
+
