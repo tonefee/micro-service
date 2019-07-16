@@ -9,7 +9,7 @@ import java.nio.channels.SocketChannel;
 import java.util.Iterator;
 
 /**
- * 实现同步非阻塞的NIO客户端
+ * 实现同步非阻塞的NIO客户端， NIO通讯Client端
  *
  * @author tangyifei
  * @date 2019年7月16日18:29:17
