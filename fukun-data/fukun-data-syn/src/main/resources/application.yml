@@ -1,0 +1,52 @@
+spring:
+  application:
+     name: fukun-data-syn
+  redis:
+     database: 0
+     host: 192.168.0.52
+     password: wd123
+     port: 6379
+     timeout: 6000
+     jedis:
+       pool:
+         max-idle: 50
+         min-idle: 8
+         max-active: 500
+         max-wait: 5
+         test-on-create: false
+         test-on-borrow: true
+         test-on-return: false
+         test-while-idle: true
+  rabbitmq:
+       addresses: 192.168.0.43:5672
+       host: 192.168.0.43
+       port: 5672
+       username: guest
+       password: guest
+       virtual-host: /
+       connection-timeout: 15000
+       #消息发送到交换机确认机制,是否确认回调
+       publisher-confirms: true
+       #消息发送到交换机确认机制,是否返回回馈
+       publisher-returns: true
+  #     template.mandatory: true
+       listener:
+         simple:
+  #         # 手动应答
+           acknowledge-mode: manual
+         direct:
+          # 配置该消费者的ack方式为手动(消费者的ack方式默认是自动的，也就是说消息一旦被消费（无论是否处理成功），消息都会被确认，然后会从队列中删除)
+           acknowledge-mode: manual
+  main:
+      allow-bean-definition-overriding: true
+
+server:
+ port: 8007
+
+canal:
+  server:
+    ip: 192.168.0.43
+    port: 11111
+    dest: example
+    userName:
+    userPass:
