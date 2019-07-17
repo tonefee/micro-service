@@ -118,4 +118,18 @@ public class StringUtil {
         format = replace(format, replaceOperator, "%s");
         return formatIfArgs(format, args);
     }
+
+    /**
+     * 在循环中截取字符串
+     * 如果在循环中截取字符串，最好创建一个新的字符串对象，这样String对象的默认substring截取字符串函数中的包级别的私有构造函数截取的字符串对象没有被引用，就有可能被垃圾回收，节省内存空间
+     * 如果在循环中不这样做的话，可能会导致OOM的发生
+     * 如果不在循环中截取字符串，那么就使用String对象的substring方法，因为一旦方法执行完毕，该对象就没有地方被引用，当GCf发生后，就会被回收
+     */
+    public static String subStr(String sourceStr, int beginIndex, int endIndex) {
+        if (isNotEmpty(sourceStr)) {
+            return new String(sourceStr.substring(beginIndex, endIndex));
+        }
+        return null;
+    }
+
 }
