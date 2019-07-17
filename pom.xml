@@ -19,6 +19,7 @@
         <module>fukun-message-queue</module>
         <module>fukun-cache</module>
         <module>fukun-jvm</module>
+        <module>fukun-data</module>
     </modules>
 
     <!--    <repositories>
