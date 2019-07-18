@@ -17,7 +17,7 @@ public final class RabbitMqConstants {
     /**
      * 死信交换器的名字
      */
-    public final static String DEAD_LETTER_EXCHANGE_NAME = "DL_EXCHANGE";
+    public final static String DEAD_LETTER_EXCHANGE_NAME = "dead_exchange";
 
     /**
      * direct 类型的交换机的名字
@@ -42,7 +42,7 @@ public final class RabbitMqConstants {
     /**
      * 死信队列的名字
      */
-    public static final String DEAD_LETTER_QUEUE_NAME = "DL_QUEUE";
+    public static final String DEAD_LETTER_QUEUE_NAME = "dead_queue";
 
     /**
      * 死信队列转发队列的名字
@@ -71,7 +71,7 @@ public final class RabbitMqConstants {
     /**
      * 死信队列的路由key
      */
-    public final static String DEAD_LETTER_ROUTING_KEY = "DL_KEY";
+    public final static String DEAD_LETTER_ROUTING_KEY = "dead_routing_key";
 
     /**
      * 死信队列的转发队列的路由key
