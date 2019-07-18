@@ -134,15 +134,8 @@ canal client将从canal server获取的binlog数据最终以json行格式保存�
 直接发送到MQ)。   
 binlog生产端和消费端的之间，增加MQ作为缓冲，增加容错度和动态扩展性。  
 
-
-
-
-
-
-
-
 # 从头创建工程
-依赖配置： 
+## 依赖配置
 ``` 
 <dependency>
     <groupId>com.alibaba.otter</groupId>
@@ -150,6 +143,48 @@ binlog生产端和消费端的之间，增加MQ作为缓冲，增加容错度和
     <version>1.1.0</version>
 </dependency>
 ```
+
+## 增加canal服务端的连接信息
+修改 application.yml，添加连接canal服务端的连接信息配置，如下：  
+```
+canal:
+  server:
+    ip: 192.168.0.43
+    port: 11111
+    dest: example
+    userName:
+    userPass:
+```    
+## 增加从canal服务端读取binlog的canal客户端相关的类  
+相关的类是 CanalClient，进入该类自己查看相应的业务逻辑。  
+
+## 启动类中获取 CanalClient，程序启动的时候进行监听服务端的 binlog 日志的获取  
+
+```
+ public static void main(String[] args) {
+        SpringApplication.run(DataSynApplication.class, args);
+        CanalClient canalClient = SpringContext.getBean(CanalClient.class);
+        canalClient.createConnect();
+    }
+```
+
+启动项目，修改数据库相关的表的记录，控制台打印日志如下：    
+![数据同步](pictures/p9.png)    
+
+下面我们优化以上的逻辑，就是把监控到的binlog以json格式发送到rabbitmq中，然后redis异步从
+rabbitmq中获取数据进行数据库中的数据与缓存中的数据的数据同步，实际的生产环境要保证redis与
+rabbitmq的高可用。  
+
+
+
+
+
+
+
+
+  
+
+
 
 
   

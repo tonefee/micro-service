@@ -1,7 +1,9 @@
 package com.fukun.syn;
 
 import com.fukun.syn.canal.CanalClient;
+import com.fukun.syn.config.redis.RedisHandler;
 import com.fukun.syn.initial.SpringContext;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
@@ -17,7 +19,9 @@ public class DataSynApplication {
     public static void main(String[] args) {
         SpringApplication.run(DataSynApplication.class, args);
         CanalClient canalClient = SpringContext.getBean(CanalClient.class);
-        canalClient.createConnect();
+        RabbitTemplate rabbitTemplate = SpringContext.getBean(RabbitTemplate.class);
+        RedisHandler redisHandler = SpringContext.getBean(RedisHandler.class);
+        canalClient.createConnect(rabbitTemplate, redisHandler);
     }
 
 }

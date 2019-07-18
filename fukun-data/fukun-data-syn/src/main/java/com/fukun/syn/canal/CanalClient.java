@@ -4,13 +4,27 @@ import com.alibaba.otter.canal.client.CanalConnector;
 import com.alibaba.otter.canal.client.CanalConnectors;
 import com.alibaba.otter.canal.protocol.CanalEntry.*;
 import com.alibaba.otter.canal.protocol.Message;
+import com.fukun.syn.config.redis.RedisHandler;
+import com.fukun.syn.constant.Constants;
+import com.fukun.syn.constant.MessageComponentTypeEnums;
+import com.fukun.syn.model.MessageEntry;
+import com.google.gson.Gson;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.core.MessageBuilder;
+import org.springframework.amqp.core.MessageProperties;
+import org.springframework.amqp.rabbit.connection.CorrelationData;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
+import static com.fukun.syn.constant.Constants.MAX_TRY_COUNT_PREFIX_KEY;
 
 /**
  * canal的客户端
@@ -19,9 +33,9 @@ import java.util.List;
  * @date 2019年7月17日15:10:45
  */
 @Slf4j
-@Component
 @ConfigurationProperties(prefix = "canal.server")
 @Data
+@Component
 public class CanalClient {
 
     private String ip;
@@ -34,8 +48,9 @@ public class CanalClient {
 
     private String userPass;
 
-    public void createConnect() {
+    private int messageComponentType;
 
+    public void createConnect(RabbitTemplate rabbitTemplate, RedisHandler redisHandler) {
         // 创建链接
         CanalConnector connector = CanalConnectors.newSingleConnector(new InetSocketAddress(ip, port), dest, userName, userPass);
         int batchSize = 1000;
@@ -61,7 +76,7 @@ public class CanalClient {
                     }
                 } else {
                     emptyCount = 0;
-                    printEntry(message.getEntries());
+                    printEntry(message.getEntries(), rabbitTemplate, redisHandler);
                 }
                 // 提交确认
                 connector.ack(batchId);
@@ -76,8 +91,10 @@ public class CanalClient {
         }
     }
 
-    private static void printEntry(List<Entry> entrys) {
+    private void printEntry(List<Entry> entrys, RabbitTemplate rabbitTemplate, RedisHandler redisHandler) {
+        MessageEntry messageEntry;
         for(Entry entry : entrys) {
+            messageEntry = new MessageEntry();
             if (entry.getEntryType() == EntryType.TRANSACTIONBEGIN || entry.getEntryType() == EntryType.TRANSACTIONEND) {
                 continue;
             }
@@ -98,31 +115,88 @@ public class CanalClient {
                         entry.getHeader().getSchemaName(), entry.getHeader().getTableName(),
                         eventType));
             }
+            messageEntry.setLogfileName(entry.getHeader().getLogfileName());
+            messageEntry.setLogfileOffset(entry.getHeader().getLogfileOffset());
+            messageEntry.setSchemaName(entry.getHeader().getSchemaName());
+            messageEntry.setTableName(entry.getHeader().getTableName());
             for(RowData rowData : rowChange.getRowDatasList()) {
                 if (eventType == EventType.DELETE) {
-                    printColumn(rowData.getBeforeColumnsList());
+                    messageEntry.setEventType(EventType.DELETE);
+                    printColumn(rowData.getBeforeColumnsList(), 1, messageEntry);
                 } else if (eventType == EventType.INSERT) {
-                    printColumn(rowData.getAfterColumnsList());
+                    messageEntry.setEventType(EventType.INSERT);
+                    printColumn(rowData.getAfterColumnsList(), 1, messageEntry);
                 } else {
+                    messageEntry.setEventType(EventType.UPDATE);
                     if (log.isInfoEnabled()) {
                         log.info("------->>> 更新之前的行数据");
                     }
-                    printColumn(rowData.getBeforeColumnsList());
+                    printColumn(rowData.getBeforeColumnsList(), 0, messageEntry);
                     if (log.isInfoEnabled()) {
                         log.info("------->>> 更新之后的行数据");
                     }
-                    printColumn(rowData.getAfterColumnsList());
+                    printColumn(rowData.getAfterColumnsList(), 1, messageEntry);
                 }
             }
+            // 发送消息到rabbitMq
+            sendToRabbitmq(messageEntry, rabbitTemplate, redisHandler);
         }
     }
 
-    private static void printColumn(List<Column> columns) {
-        for(Column column : columns) {
-            if (log.isInfoEnabled()) {
-                log.info(column.getName() + " : " + column.getValue() + "   update=" + column.getUpdated());
+    private static void printColumn(List<Column> columns, int isNotBefore, MessageEntry messageEntry) {
+        int columnSize = columns.size();
+        if (isNotBefore == 0) {
+            List<MessageEntry.BeforeDataRecord> beforeDataRecordList = new ArrayList<>(columnSize);
+            MessageEntry.BeforeDataRecord beforeDataRecord;
+            for(Column column : columns) {
+                if (log.isInfoEnabled()) {
+                    log.info(column.getName() + " : " + column.getValue() + "   update=" + column.getUpdated());
+                }
+                beforeDataRecord = new MessageEntry.BeforeDataRecord();
+                beforeDataRecord.setColumnName(column.getName());
+                beforeDataRecord.setColumnValue(column.getValue());
+                beforeDataRecord.setUpdateStatus(column.getUpdated());
+                beforeDataRecordList.add(beforeDataRecord);
             }
+            messageEntry.setBeforeDataRecordList(beforeDataRecordList);
+        } else if (isNotBefore == 1) {
+            List<MessageEntry.AfterDataRecord> afterDataRecordList = new ArrayList<>(columnSize);
+            MessageEntry.AfterDataRecord afterDataRecord;
+            for(Column column : columns) {
+                if (log.isInfoEnabled()) {
+                    log.info(column.getName() + " : " + column.getValue() + "   update=" + column.getUpdated());
+                }
+                afterDataRecord = new MessageEntry.AfterDataRecord();
+                afterDataRecord.setColumnName(column.getName());
+                afterDataRecord.setColumnValue(column.getValue());
+                afterDataRecord.setUpdateStatus(column.getUpdated());
+                afterDataRecordList.add(afterDataRecord);
+            }
+            messageEntry.setAfterDataRecordList(afterDataRecordList);
         }
+    }
+
+    private void sendToRabbitmq(MessageEntry messageEntry, RabbitTemplate rabbitTemplate, RedisHandler redisHandler) {
+        // 发送消息
+        if (MessageComponentTypeEnums.RABBITMQ.getType() == messageComponentType) {
+            String msgId = System.currentTimeMillis() + "$" + UUID.randomUUID().toString();
+            redisHandler.set(MAX_TRY_COUNT_PREFIX_KEY + msgId, 0);
+            Gson gson = new Gson();
+            String json = gson.toJson(messageEntry);
+            org.springframework.amqp.core.Message message = MessageBuilder.withBody(json.getBytes()).setContentEncoding("UTF-8")
+                    .setContentType(MessageProperties.CONTENT_TYPE_JSON).setCorrelationId(msgId).build();
+            CorrelationData correlationData = new CorrelationData(msgId);
+            try {
+                redisHandler.set(msgId, gson.fromJson(gson.toJson(message), Map.class));
+            } catch (Exception e) {
+                if (log.isInfoEnabled()) {
+                    log.error("缓存错误：{}", e);
+                }
+            }
+            rabbitTemplate.convertAndSend(Constants.FANOUT_EXCHANGE_NAME, null,
+                    message, correlationData);
+        }
+
     }
 
 }

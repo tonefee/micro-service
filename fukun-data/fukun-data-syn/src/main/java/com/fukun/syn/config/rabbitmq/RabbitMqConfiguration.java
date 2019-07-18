@@ -139,6 +139,11 @@ public class RabbitMqConfiguration {
         return new Queue(Constants.FANOUT_QUEUE_NAME, true);
     }
 
+    @Bean
+    Binding bindingExchangeMessage(Queue fanOutBasicQueue, FanoutExchange fanoutExchange) {
+        return BindingBuilder.bind(fanOutBasicQueue).to(fanoutExchange);
+    }
+
     /**
      * 定义rabbit template用于数据的接收和发送,可以设置消息确认机制和回调:
      * 在生产者需要消息发送后的回调，需要对rabbitTemplate设置ConfirmCallback对象，

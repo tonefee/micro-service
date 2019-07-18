@@ -50,3 +50,6 @@ canal:
     dest: example
     userName:
     userPass:
+    # 1表示rabbitMq 2表示redis 3表示kafka 4表示rocket
+    messageComponentType: 1
+
