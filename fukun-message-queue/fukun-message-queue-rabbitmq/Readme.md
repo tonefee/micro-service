@@ -1038,8 +1038,8 @@ topic.queue.object.*的队列，点击下面的Get Message(s)，如下：
 
 ### 死信队列介绍    
 
-`备注： 对于死信队列的代码实现请参考 fukun-data-syn 中的死信队列的代码实现，下面只是简单的介绍
-死信队列的使用。 `
+**`备注： 对于死信队列的代码实现请参考 fukun-data-syn 中的死信队列的代码实现，下面只是简单的介绍
+死信队列的使用。 `**
  
 死信队列&死信交换器：DLX，dead-letter-exchange,称之为死信交换器，
 当消息变成一个死信之后，如果这个消息所在的队列存在x-dead-letter-exchange参数，
