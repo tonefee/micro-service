@@ -175,6 +175,157 @@ canal:
 rabbitmq中获取数据进行数据库中的数据与缓存中的数据的数据同步，实际的生产环境要保证redis与
 rabbitmq的高可用。  
 
+在 application.yml 文件中增加一个 messageComponentType，用于判断使用哪种消息中间件，
+messageComponentType 数值对应 MessageComponentTypeEnums类中的枚举值定义，如下：    
+
+```  
+canal:
+  server:
+    ip: 192.168.0.43
+    port: 11111
+    dest: example
+    userName:
+    userPass:
+    # 1表示rabbitMq 2表示redis 3表示kafka 4表示rocket
+    messageComponentType: 1
+```
+然后修改启动类，分别注入 RabbitTemplate 类、RedisHandler类，不要使用@Resource注解，
+不然会报空指针，如下：  
+```
+ RabbitTemplate rabbitTemplate = SpringContext.getBean(RabbitTemplate.class);
+ RedisHandler redisHandler = SpringContext.getBean(RedisHandler.class);
+```
+
+创建 MessageEntry 类，这个类主要是封装binlog相关的消息数据，具体查看代码。    
+
+修改 CanalClient 类，增加如下代码：
+```  
+  // 获取事件类型 UPDATE INSERT DELETE CREATE ALTER ERASE
+            EventType eventType = rowChange.getEventType();
+            if (log.isInfoEnabled()) {
+                log.info(String.format("================>>>>binlog[%s:%s] , name[%s,%s] , eventType : %s",
+                        entry.getHeader().getLogfileName(), entry.getHeader().getLogfileOffset(),
+                        entry.getHeader().getSchemaName(), entry.getHeader().getTableName(),
+                        eventType));
+            }
+            messageEntry.setLogfileName(entry.getHeader().getLogfileName());
+            messageEntry.setLogfileOffset(entry.getHeader().getLogfileOffset());
+            messageEntry.setSchemaName(entry.getHeader().getSchemaName());
+            messageEntry.setTableName(entry.getHeader().getTableName());
+            for(RowData rowData : rowChange.getRowDatasList()) {
+                if (eventType == EventType.DELETE) {
+                    messageEntry.setEventType(EventType.DELETE);
+                    printColumn(rowData.getBeforeColumnsList(), 1, messageEntry);
+                } else if (eventType == EventType.INSERT) {
+                    messageEntry.setEventType(EventType.INSERT);
+                    printColumn(rowData.getAfterColumnsList(), 1, messageEntry);
+                } else {
+                    messageEntry.setEventType(EventType.UPDATE);
+                    if (log.isInfoEnabled()) {
+                        log.info("------->>> 更新之前的行数据");
+                    }
+                    printColumn(rowData.getBeforeColumnsList(), 0, messageEntry);
+                    if (log.isInfoEnabled()) {
+                        log.info("------->>> 更新之后的行数据");
+                    }
+                    printColumn(rowData.getAfterColumnsList(), 1, messageEntry);
+                }
+            }
+            // 发送消息到rabbitMq
+            sendToRabbitmq(messageEntry, rabbitTemplate, redisHandler);
+```
+这段代码就是将canal监控到的binlog发送给消息队列rabbitmq，并设置消息重发次数等操作，具体请查看
+CanalClient 类的 sendToRabbitmq 方法，重发策略等保证生产端到mq的消息不丢失的具体实现请参考
+fukun-message-queue-rabbitmq-producer 中的代码实现。  
+
+修改rabbitmq的配置，这里使用了 fanout 类型的交换机，使用死信队列避免消费端消费失败而导致mq到消费端的消息丢失问题。  
+RabbitMqConfiguration 类的配置请参考代码。
+
+**`备注：在实际的开发过程中，不要把消费端与生产端都写在一个程序里， 应该分开写，不然体现不了rabbitmq的异步解耦
+等特性，并且当生产消息的速率大于消毒消息的速率的时候，可以多起几个消费端实例扩大消费，这样可以避免消息队列的
+消息积压问题`。**  
+ 
+下面说一下死信队列的实现，就是我这里面 data_syn_queue 队列绑定死信交换机 dead_exchange，当 data_syn_queue 
+队列中的消息消费失败，data_syn_queue 中的被消费者消费失败消息会进入死信队列中，这里的死信队列是 dead_queue，
+消费者开一个后台线程监听死信队列，处理之前处理失败的消息。
+如果在没有添加死信队列的功能之前添加过队列 data_syn_queue ，那么当使用死信队列的时候，请在rabbitmq的控制台删除该死信队列，不然
+会报如下类似的错误：  
+![数据同步](pictures/p10.png)    
+
+配置 data_syn_queue 队列绑定死信交换机与死信队列，如下：  
+
+```
+ @Bean
+    public Queue fanOutQueue() {
+        Map<String, Object> args = new HashMap<>(2);
+        // 设置队列中的消息 10s 钟后过期
+        // args.put("x-message-ttl", 10000);
+//       x-dead-letter-exchange    声明  死信交换机
+        args.put("x-dead-letter-exchange", RabbitMqConstants.DEAD_LETTER_EXCHANGE_NAME);
+//       x-dead-letter-routing-key    声明 死信路由键
+        args.put("x-dead-letter-routing-key", RabbitMqConstants.DEAD_LETTER_ROUTING_KEY);
+        // 队列持久化
+        return new Queue(Constants.FANOUT_QUEUE_NAME, true, false, false, args);
+    }
+```
+其他的请参考代码，这里注意我使用的是fanout类型的交换机，如果你用topic等类型的交换机
+并且在定义死信交换机时，清修改 ExchangeBuilder.fanoutExchange() 为 ExchangeBuilder.topicExchange()，
+
+修改消费端 RabbitMqConsumer 的代码，在RabbitMqConsumer的handleObjectMessage方法中，我故意使用 int a = 1 / 0，抛异常，
+让消费端消费消息失败，测试消费失败的消息是否进入了死信队列而重新被消费，监控死信队列的代码是RabbitMqConsumer
+中的redirect方法，具体实现请看代码，在redirect方法中监控死信队列中的消息，然后同步到redis中，同步到redis中的代码逻辑请参考
+RabbitMqConsumer类中的synRedis的方法。  
+启动工程，修改数据库的相关记录，如下：  
+![数据同步](pictures/p13.png)  
+
+查看控制台和rabbitmq的控制台，如下：  
+![数据同步](pictures/p11.png)  
+
+控制台的部分输出如下：  
+
+```
+java.lang.ArithmeticException: / by zero
+	at com.fukun.syn.consumer.RabbitMqConsumer.handleObjectMessage(RabbitMqConsumer.java:41) ~[classes/:na]
+	at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method) ~[na:1.8.0_144]
+	at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:62) ~[na:1.8.0_144]
+	at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43) ~[na:1.8.0_144]
+	at java.lang.reflect.Method.invoke(Method.java:498) ~[na:1.8.0_144]
+	at org.springframework.messaging.handler.invocation.InvocableHandlerMethod.doInvoke(InvocableHandlerMethod.java:171) [spring-messaging-5.1.8.RELEASE.jar:5.1.8.RELEASE]
+	at org.springframework.messaging.handler.invocation.InvocableHandlerMethod.invoke(InvocableHandlerMethod.java:120) [spring-messaging-5.1.8.RELEASE.jar:5.1.8.RELEASE]
+	at org.springframework.amqp.rabbit.listener.adapter.HandlerAdapter.invoke(HandlerAdapter.java:50) [spring-rabbit-2.1.7.RELEASE.jar:2.1.7.RELEASE]
+	at org.springframework.amqp.rabbit.listener.adapter.MessagingMessageListenerAdapter.invokeHandler(MessagingMessageListenerAdapter.java:196) [spring-rabbit-2.1.7.RELEASE.jar:2.1.7.RELEASE]
+	at org.springframework.amqp.rabbit.listener.adapter.MessagingMessageListenerAdapter.onMessage(MessagingMessageListenerAdapter.java:129) [spring-rabbit-2.1.7.RELEASE.jar:2.1.7.RELEASE]
+	at org.springframework.amqp.rabbit.listener.AbstractMessageListenerContainer.doInvokeListener(AbstractMessageListenerContainer.java:1552) [spring-rabbit-2.1.7.RELEASE.jar:2.1.7.RELEASE]
+	at org.springframework.amqp.rabbit.listener.AbstractMessageListenerContainer.actualInvokeListener(AbstractMessageListenerContainer.java:1478) [spring-rabbit-2.1.7.RELEASE.jar:2.1.7.RELEASE]
+	at org.springframework.amqp.rabbit.listener.AbstractMessageListenerContainer.invokeListener(AbstractMessageListenerContainer.java:1466) [spring-rabbit-2.1.7.RELEASE.jar:2.1.7.RELEASE]
+	at org.springframework.amqp.rabbit.listener.AbstractMessageListenerContainer.doExecuteListener(AbstractMessageListenerContainer.java:1461) [spring-rabbit-2.1.7.RELEASE.jar:2.1.7.RELEASE]
+	at org.springframework.amqp.rabbit.listener.AbstractMessageListenerContainer.executeListener(AbstractMessageListenerContainer.java:1410) [spring-rabbit-2.1.7.RELEASE.jar:2.1.7.RELEASE]
+	at org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer.doReceiveAndExecute(SimpleMessageListenerContainer.java:870) ~[spring-rabbit-2.1.7.RELEASE.jar:2.1.7.RELEASE]
+	at org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer.receiveAndExecute(SimpleMessageListenerContainer.java:854) ~[spring-rabbit-2.1.7.RELEASE.jar:2.1.7.RELEASE]
+	at org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer.access$1600(SimpleMessageListenerContainer.java:78) ~[spring-rabbit-2.1.7.RELEASE.jar:2.1.7.RELEASE]
+	at org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer$AsyncMessageProcessingConsumer.mainLoop(SimpleMessageListenerContainer.java:1137) ~[spring-rabbit-2.1.7.RELEASE.jar:2.1.7.RELEASE]
+	at org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer$AsyncMessageProcessingConsumer.run(SimpleMessageListenerContainer.java:1043) ~[spring-rabbit-2.1.7.RELEASE.jar:2.1.7.RELEASE]
+	at java.lang.Thread.run(Thread.java:748) ~[na:1.8.0_144]
+
+2019-07-18 19:58:56.204  INFO 15696 --- [ntContainer#0-1] com.fukun.syn.consumer.RabbitMqConsumer  : dead message  10s 后 消费消息 {"logfileName":"mysql-bin.000008","logfileOffset":141821,"schemaName":"cfpu_erp","tableName":"t_exchange_rate","eventType":"INSERT"
+
+```
+消息处理失败，消费者会从死信队列中获取之前处理失败的消息再次消费，建议在实际的开发中，最好开一个后台线程去处理失败的消息。  
+
+然后查看redis中的数据有没有同步成功，如下：  
+![数据同步](pictures/p12.png)  
+说明同步成功。  
+
+
+
+
+
+
+
+
+
+
+
 
 
 
