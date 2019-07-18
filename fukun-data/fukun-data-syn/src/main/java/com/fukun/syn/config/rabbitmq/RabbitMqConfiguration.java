@@ -48,27 +48,13 @@ public class RabbitMqConfiguration {
     }
 
     /**
-     * 如果想将消息进行持久化，只需要将交换机和队列持久化就可以了
-     * 1. 设置交换机类型
-     * 2. 将队列绑定到交换机
-     * FanoutExchange: 将消息分发到所有的绑定队列，无routingkey的概念
-     * HeadersExchange ：通过添加属性key-value匹配
-     * DirectExchange:按照routingkey分发到指定队列
-     * TopicExchange:多关键字匹配
-     */
-    @Bean
-    FanoutExchange fanoutExchange() {
-        return new FanoutExchange(Constants.FANOUT_EXCHANGE_NAME, true, false);
-    }
-
-    /**
      * 死信队列跟交换机类型没有关系 不一定为directExchange  不影响该类型交换机的特性.
      *
      * @return the exchange
      */
     @Bean("deadLetterExchange")
     public Exchange deadLetterExchange() {
-        return ExchangeBuilder.directExchange(RabbitMqConstants.DEAD_LETTER_EXCHANGE_NAME).durable(true).build();
+        return ExchangeBuilder.fanoutExchange(RabbitMqConstants.DEAD_LETTER_EXCHANGE_NAME).durable(true).build();
     }
 
     /**
@@ -83,22 +69,7 @@ public class RabbitMqConfiguration {
      */
     @Bean("deadLetterQueue")
     public Queue deadLetterQueue() {
-        Map<String, Object> args = new HashMap<>(2);
-//       x-dead-letter-exchange    声明  死信交换机
-        args.put("x-dead-letter-exchange", RabbitMqConstants.DEAD_LETTER_EXCHANGE_NAME);
-//       x-dead-letter-routing-key    声明 死信路由键
-        args.put("x-dead-letter-routing-key", RabbitMqConstants.DEAD_LETTER_REDIRECT_ROUTING_KEY);
-        return QueueBuilder.durable(RabbitMqConstants.DEAD_LETTER_QUEUE_NAME).withArguments(args).build();
-    }
-
-    /**
-     * 定义死信队列转发队列.
-     *
-     * @return the queue
-     */
-    @Bean("redirectQueue")
-    public Queue redirectQueue() {
-        return QueueBuilder.durable(RabbitMqConstants.DEAD_LETTER_REDIRECT_QUEUE_NAME).build();
+        return new Queue(RabbitMqConstants.DEAD_LETTER_QUEUE_NAME, true);
     }
 
     /**
@@ -109,17 +80,20 @@ public class RabbitMqConfiguration {
     @Bean
     public Binding deadLetterBinding() {
         return new Binding(RabbitMqConstants.DEAD_LETTER_QUEUE_NAME, Binding.DestinationType.QUEUE, RabbitMqConstants.DEAD_LETTER_EXCHANGE_NAME, RabbitMqConstants.DEAD_LETTER_ROUTING_KEY, null);
-
     }
 
     /**
-     * 死信路由通过 KEY_R 绑定键绑定到死信队列上.
-     *
-     * @return the binding
+     * 如果想将消息进行持久化，只需要将交换机和队列持久化就可以了
+     * 1. 设置交换机类型
+     * 2. 将队列绑定到交换机
+     * FanoutExchange: 将消息分发到所有的绑定队列，无routingkey的概念
+     * HeadersExchange ：通过添加属性key-value匹配
+     * DirectExchange:按照routingkey分发到指定队列
+     * TopicExchange:多关键字匹配
      */
     @Bean
-    public Binding redirectBinding() {
-        return new Binding(RabbitMqConstants.DEAD_LETTER_REDIRECT_QUEUE_NAME, Binding.DestinationType.QUEUE, RabbitMqConstants.DEAD_LETTER_EXCHANGE_NAME, RabbitMqConstants.DEAD_LETTER_REDIRECT_ROUTING_KEY, null);
+    FanoutExchange fanoutExchange() {
+        return new FanoutExchange(Constants.FANOUT_EXCHANGE_NAME, true, false);
     }
 
     /**
@@ -131,17 +105,21 @@ public class RabbitMqConfiguration {
      * exclusive  表示该消息队列是否只在当前connection生效,默认是false
      */
     @Bean
-    public Queue fanOutBasicQueue() {
-//        Map<String, Object> arguments = new HashMap<>();
-//        arguments.put("x-message-ttl", 60000);//60秒自动删除
-//        return new Queue(QUEUE_NAME3,true,false,true,arguments);
+    public Queue fanOutQueue() {
+        Map<String, Object> args = new HashMap<>(2);
+        // 设置队列中的消息 10s 钟后过期
+        // args.put("x-message-ttl", 10000);
+//       x-dead-letter-exchange    声明  死信交换机
+        args.put("x-dead-letter-exchange", RabbitMqConstants.DEAD_LETTER_EXCHANGE_NAME);
+//       x-dead-letter-routing-key    声明 死信路由键
+        args.put("x-dead-letter-routing-key", RabbitMqConstants.DEAD_LETTER_ROUTING_KEY);
         // 队列持久化
-        return new Queue(Constants.FANOUT_QUEUE_NAME, true);
+        return new Queue(Constants.FANOUT_QUEUE_NAME, true, false, false, args);
     }
 
     @Bean
-    Binding bindingExchangeMessage(Queue fanOutBasicQueue, FanoutExchange fanoutExchange) {
-        return BindingBuilder.bind(fanOutBasicQueue).to(fanoutExchange);
+    Binding bindingExchangeMessage(Queue fanOutQueue, FanoutExchange fanoutExchange) {
+        return BindingBuilder.bind(fanOutQueue).to(fanoutExchange);
     }
 
     /**

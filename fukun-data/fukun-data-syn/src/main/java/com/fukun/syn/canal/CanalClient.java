@@ -19,7 +19,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 import java.net.InetSocketAddress;
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -146,33 +146,23 @@ public class CanalClient {
     private static void printColumn(List<Column> columns, int isNotBefore, MessageEntry messageEntry) {
         int columnSize = columns.size();
         if (isNotBefore == 0) {
-            List<MessageEntry.BeforeDataRecord> beforeDataRecordList = new ArrayList<>(columnSize);
-            MessageEntry.BeforeDataRecord beforeDataRecord;
+            Map<String, Object> beforeMap = new HashMap<>(columnSize);
             for(Column column : columns) {
                 if (log.isInfoEnabled()) {
                     log.info(column.getName() + " : " + column.getValue() + "   update=" + column.getUpdated());
                 }
-                beforeDataRecord = new MessageEntry.BeforeDataRecord();
-                beforeDataRecord.setColumnName(column.getName());
-                beforeDataRecord.setColumnValue(column.getValue());
-                beforeDataRecord.setUpdateStatus(column.getUpdated());
-                beforeDataRecordList.add(beforeDataRecord);
+                beforeMap.put(column.getName(), column.getValue());
             }
-            messageEntry.setBeforeDataRecordList(beforeDataRecordList);
+            messageEntry.setBefore(beforeMap);
         } else if (isNotBefore == 1) {
-            List<MessageEntry.AfterDataRecord> afterDataRecordList = new ArrayList<>(columnSize);
-            MessageEntry.AfterDataRecord afterDataRecord;
+            Map<String, Object> afterMap = new HashMap<>(columnSize);
             for(Column column : columns) {
                 if (log.isInfoEnabled()) {
                     log.info(column.getName() + " : " + column.getValue() + "   update=" + column.getUpdated());
                 }
-                afterDataRecord = new MessageEntry.AfterDataRecord();
-                afterDataRecord.setColumnName(column.getName());
-                afterDataRecord.setColumnValue(column.getValue());
-                afterDataRecord.setUpdateStatus(column.getUpdated());
-                afterDataRecordList.add(afterDataRecord);
+                afterMap.put(column.getName(), column.getValue());
             }
-            messageEntry.setAfterDataRecordList(afterDataRecordList);
+            messageEntry.setAfter(afterMap);
         }
     }
 

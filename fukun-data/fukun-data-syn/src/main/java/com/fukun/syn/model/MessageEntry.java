@@ -1,10 +1,12 @@
 package com.fukun.syn.model;
 
 import com.alibaba.otter.canal.protocol.CanalEntry;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
-import java.util.List;
+import java.util.Map;
 
 /**
  * binlog事件消息
@@ -45,59 +47,13 @@ public class MessageEntry implements Serializable {
     private CanalEntry.EventType eventType;
 
     /**
-     * 更新之前的数据记录列表
+     * 更新之前的数据hash表
      */
-    private List<BeforeDataRecord> beforeDataRecordList;
+    private Map<String, Object> before;
 
     /**
-     * 更新之后的数据记录列表
+     * 更新之后的数据hash表
      */
-    private List<AfterDataRecord> afterDataRecordList;
-
-    /**
-     * 修改之前的数据库记录
-     */
-    @Getter
-    @Setter
-    @ToString(callSuper = true)
-    public static class BeforeDataRecord extends BaseDataRecord {
-    }
-
-    /**
-     * 修改之后的数据库记录
-     */
-    @Getter
-    @Setter
-    @ToString(callSuper = true)
-    public static class AfterDataRecord extends BaseDataRecord {
-    }
-
-    /**
-     * 数据库记录的父类
-     */
-    @Data
-    @AllArgsConstructor
-    @NoArgsConstructor
-    static class BaseDataRecord implements Serializable {
-
-        private static final long serialVersionUID = 7189822638408740150L;
-
-        /**
-         * 列名
-         */
-        private String columnName;
-
-        /**
-         * 列值
-         */
-        private String columnValue;
-
-        /**
-         * 更新与否
-         */
-        private Boolean updateStatus;
-
-    }
-
+    private Map<String, Object> after;
 
 }

@@ -1,6 +1,5 @@
 package com.fukun.syn.producer;
 
-import com.fukun.commons.constants.RabbitMqConstants;
 import com.fukun.syn.constant.Constants;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.Message;
