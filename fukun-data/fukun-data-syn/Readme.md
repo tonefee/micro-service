@@ -316,6 +316,10 @@ java.lang.ArithmeticException: / by zero
 ![数据同步](pictures/p12.png)  
 说明同步成功。  
 
+[阿里巴巴 MySQL binlog 增量订阅&消费组件](https://github.com/alibaba/canal)
+
+[其他代码实现参考](https://github.com/BooksCup/canal-client)
+
 
 
 
