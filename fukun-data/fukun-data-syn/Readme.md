@@ -1,5 +1,5 @@
 # 核心思想
-1、对musql的修改，添加，删除会产生binlog日志。  
+1、对mysql的修改，添加，删除会产生binlog日志。  
 2、对mysql binlog(row) parser 这一步交给canal。  
 3、MQ对解析后binlog增量数据进行推送。  
 4、redis等相关的nosql对MQ数据进行消费（接收+数据解析，考虑消费速度，MQ队列的阻塞），数据写入/修改到nosql 。 
