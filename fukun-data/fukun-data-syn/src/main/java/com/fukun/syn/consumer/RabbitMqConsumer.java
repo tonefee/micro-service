@@ -38,7 +38,7 @@ public class RabbitMqConsumer {
     public void handleObjectMessage(Message message, Channel channel) throws IOException {
         try {
             // 为了测试死信队列，就是说消息处理失败，处理失败的消息会进入死信队列
-            int a = 1 / 0;
+            // int a = 1 / 0;
             if (log.isInfoEnabled()) {
                 // 处理消息
                 log.info("消费者处理消息成功，消息是：{}", new String(message.getBody()));
