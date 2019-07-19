@@ -2,9 +2,10 @@ package com.fukun.commons.util;
 
 /**
  * 全局分布式id生成器（SnowFlake算法）
- * 分享地址：https://segmentfault.com/a/1190000011282426
  *
  * @author tangyifei
+ * @date 2019年7月19日15:47:42
+ * @see <a href="https://segmentfault.com/a/1190000011282426">分布式id生成器 SnowFlake算法</a>
  */
 public class SnowFlakeIdUtil {
 
