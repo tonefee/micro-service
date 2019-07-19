@@ -48,7 +48,6 @@ public class RabbitMqController extends BaseCallBack {
      * 保存 order , 发送订单消息到消息队列，同时需要向库存服务发送通知减库存
      *
      * @param order 订单实体
-     * @return 返回结果
      */
     @ApiOperation(value = "保存订单", httpMethod = "POST", notes = "保存订单")
     @PostMapping
@@ -60,7 +59,6 @@ public class RabbitMqController extends BaseCallBack {
      * 测试死信队列.
      *
      * @param p the p
-     * @return the response entity
      */
     @ApiOperation(value = "测试死信队列", httpMethod = "POST", notes = "测试死信队列")
     @PostMapping("/dead")

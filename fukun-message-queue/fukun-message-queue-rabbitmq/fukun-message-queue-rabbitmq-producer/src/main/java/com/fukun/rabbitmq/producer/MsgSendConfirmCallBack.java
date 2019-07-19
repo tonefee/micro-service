@@ -15,15 +15,18 @@ import static com.fukun.rabbitmq.constant.Constants.MAX_TRY_COUNT_PREFIX_KEY;
 
 /**
  * 消息发送到交换机确认机制
- * 如果设置了消息持久化，那么ack=true是在消息持久化完成后，就是存到硬盘上之后再发送的，
+ *
+ * <p>如果设置了消息持久化，那么ack=true是在消息持久化完成后，就是存到硬盘上之后再发送的，
  * 确保消息已经存在硬盘上，万一消息服务挂了，消息服务恢复是能够再重发消息
  * 消息服务收到消息后，消息会处于"UNACK"的状态，直到客户端确认消息
- * 注意：一旦返回的确认消息丢失，那么消息服务会重发消息；如果你设置了autoAck= false，
+ *
+ * <p>注意：一旦返回的确认消息丢失，那么消息服务会重发消息；如果你设置了autoAck= false，
  * 但又没应答 channel.baskAck，也没有应答 channel.baskNack，那么会导致非常严重的错误：
- * 消息队列会被堵塞住，可参考http://blog.sina.com.cn/s/blog_48d4cf2d0102w53t.html 所以，无论如何都必须应答
+ * 消息队列会被堵塞住，所以，无论如何都必须应答
  *
  * @author tangyifei
  * @date 2019年7月6日11:53:58
+ * @see <a href="http://blog.sina.com.cn/s/blog_48d4cf2d0102w53t.html ">RabbitMQ使用不当导致的队列堵塞问题及解决之道</>
  */
 @Slf4j
 public class MsgSendConfirmCallBack extends BaseCallBack {
@@ -32,9 +35,10 @@ public class MsgSendConfirmCallBack extends BaseCallBack {
     private BrokerMessageLogMapper brokerMessageLogMapper;
 
     /**
-     * 当消息发送到交换机（exchange）时，该方法被调用.
+     * <p><pre>当消息发送到交换机（exchange）时，该方法被调用.
      * 1.如果消息没有到exchange,则 ack=false
      * 2.如果消息到达exchange,则 ack=true
+     * </pre>
      *
      * @param correlationData 确认消息对比数据对象
      * @param ack             消息确认标志

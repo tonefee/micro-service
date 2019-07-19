@@ -47,13 +47,14 @@ public class RabbitMqConfiguration {
     }
 
     /**
-     * 如果想将消息进行持久化，只需要将交换机和队列持久化就可以了
+     * <pre>如果想将消息进行持久化，只需要将交换机和队列持久化就可以了
      * 1. 设置交换机类型
      * 2. 将队列绑定到交换机
      * FanoutExchange: 将消息分发到所有的绑定队列，无routingkey的概念
      * HeadersExchange ：通过添加属性key-value匹配
      * DirectExchange:按照routingkey分发到指定队列
      * TopicExchange:多关键字匹配
+     * </pre>
      */
     @Bean
     TopicExchange topicExchange() {
@@ -155,12 +156,12 @@ public class RabbitMqConfiguration {
     }
 
     /**
-     * 定义rabbit template用于数据的接收和发送,可以设置消息确认机制和回调:
-     * 在生产者需要消息发送后的回调，需要对rabbitTemplate设置ConfirmCallback对象，
+     * <pre>定义rabbit template用于数据的接收和发送,可以设置消息确认机制和回调:
+     * 在生产者需要消息发送后的回调，需要对rabbitTemplate设置 {@code ConfirmCallback} 对象，
      * 由于不同的生产者需要对应不同的ConfirmCallback，如果rabbitTemplate设置为单例bean，则所有的rabbitTemplate
-     * 实际的ConfirmCallback为最后一次申明的ConfirmCallback。
-     * 通过使用RabbitTemplate来对开发者提供API操作, 因为要设置回调类，所以应是prototype类型，
-     * 如果是singleton类型，则回调类为最后一次设置
+     * 实际的 {@code ConfirmCallback}  为最后一次申明的 {@code ConfirmCallback} 。
+     * 通过使用 {@code RabbitTemplate} 来对开发者提供API操作, 因为要设置回调类，所以应是prototype类型，
+     * 如果是singleton类型，则回调类为最后一次设置</pre>
      *
      * @return
      */
