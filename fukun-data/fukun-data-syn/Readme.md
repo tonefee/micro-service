@@ -196,43 +196,55 @@ canal:
  RedisHandler redisHandler = SpringContext.getBean(RedisHandler.class);
 ```
 
-创建 MessageEntry 类，这个类主要是封装binlog相关的消息数据，具体查看代码。    
+创建 MessageEntry 类，这个类主要是封装binlog相关的消息数据，具体查看代码，其实使用HashMap比使用MessageEntry类要好。    
 
 修改 CanalClient 类，增加如下代码：
 ```  
-  // 获取事件类型 UPDATE INSERT DELETE CREATE ALTER ERASE
-            EventType eventType = rowChange.getEventType();
-            if (log.isInfoEnabled()) {
-                log.info(String.format("================>>>>binlog[%s:%s] , name[%s,%s] , eventType : %s",
-                        entry.getHeader().getLogfileName(), entry.getHeader().getLogfileOffset(),
-                        entry.getHeader().getSchemaName(), entry.getHeader().getTableName(),
-                        eventType));
-            }
-            messageEntry.setLogfileName(entry.getHeader().getLogfileName());
-            messageEntry.setLogfileOffset(entry.getHeader().getLogfileOffset());
-            messageEntry.setSchemaName(entry.getHeader().getSchemaName());
-            messageEntry.setTableName(entry.getHeader().getTableName());
-            for(RowData rowData : rowChange.getRowDatasList()) {
-                if (eventType == EventType.DELETE) {
-                    messageEntry.setEventType(EventType.DELETE);
-                    printColumn(rowData.getBeforeColumnsList(), 1, messageEntry);
-                } else if (eventType == EventType.INSERT) {
-                    messageEntry.setEventType(EventType.INSERT);
-                    printColumn(rowData.getAfterColumnsList(), 1, messageEntry);
-                } else {
-                    messageEntry.setEventType(EventType.UPDATE);
-                    if (log.isInfoEnabled()) {
-                        log.info("------->>> 更新之前的行数据");
-                    }
-                    printColumn(rowData.getBeforeColumnsList(), 0, messageEntry);
-                    if (log.isInfoEnabled()) {
-                        log.info("------->>> 更新之后的行数据");
-                    }
-                    printColumn(rowData.getAfterColumnsList(), 1, messageEntry);
-                }
-            }
-            // 发送消息到rabbitMq
-            sendToRabbitmq(messageEntry, rabbitTemplate, redisHandler);
+  if (entry.getEntryType() == EntryType.TRANSACTIONBEGIN || entry.getEntryType() == EntryType.TRANSACTIONEND) {
+             return;
+         }
+ 
+         RowChange rowChange;
+         try {
+             rowChange = RowChange.parseFrom(entry.getStoreValue());
+         } catch (Exception e) {
+             throw new RuntimeException("ERROR ## parser of eromanga-event has an error , data:" + entry.toString(),
+                     e);
+         }
+ 
+         // 获取事件类型 UPDATE INSERT DELETE CREATE ALTER ERASE
+         EventType eventType = rowChange.getEventType();
+         if (log.isInfoEnabled()) {
+             log.info(String.format("================>>>>binlog[%s:%s] , name[%s,%s] , eventType : %s",
+                     entry.getHeader().getLogfileName(), entry.getHeader().getLogfileOffset(),
+                     entry.getHeader().getSchemaName(), entry.getHeader().getTableName(),
+                     eventType));
+         }
+         resultMap.put("logfileName", entry.getHeader().getLogfileName());
+         resultMap.put("logfileOffset", entry.getHeader().getLogfileOffset());
+         resultMap.put("schemaName", entry.getHeader().getSchemaName());
+         resultMap.put("tableName", entry.getHeader().getTableName());
+         for(RowData rowData : rowChange.getRowDatasList()) {
+             if (eventType == EventType.DELETE) {
+                 resultMap.put("eventType", EventType.DELETE);
+                 printColumn(rowData.getBeforeColumnsList(), 1, resultMap);
+             } else if (eventType == EventType.INSERT) {
+                 resultMap.put("eventType", EventType.INSERT);
+                 printColumn(rowData.getAfterColumnsList(), 1, resultMap);
+             } else {
+                 resultMap.put("eventType", EventType.UPDATE);
+                 if (log.isInfoEnabled()) {
+                     log.info("------->>> 更新之前的行数据");
+                 }
+                 printColumn(rowData.getBeforeColumnsList(), 0, resultMap);
+                 if (log.isInfoEnabled()) {
+                     log.info("------->>> 更新之后的行数据");
+                 }
+                 printColumn(rowData.getAfterColumnsList(), 1, resultMap);
+             }
+         }
+         // 发送消息到rabbitMq
+         sendToRabbitmq(resultMap, rabbitTemplate, redisHandler);
 ```
 这段代码就是将canal监控到的binlog发送给消息队列rabbitmq，并设置消息重发次数等操作，具体请查看
 CanalClient 类的 sendToRabbitmq 方法，重发策略等保证生产端到mq的消息不丢失的具体实现请参考
