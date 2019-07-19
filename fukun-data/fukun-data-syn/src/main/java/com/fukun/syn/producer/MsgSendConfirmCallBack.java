@@ -15,10 +15,11 @@ import static com.fukun.syn.constant.Constants.MAX_TRY_COUNT_PREFIX_KEY;
  * 消息服务收到消息后，消息会处于"UNACK"的状态，直到客户端确认消息
  * 注意：一旦返回的确认消息丢失，那么消息服务会重发消息；如果你设置了autoAck= false，
  * 但又没应答 channel.baskAck，也没有应答 channel.baskNack，那么会导致非常严重的错误：
- * 消息队列会被堵塞住，可参考http://blog.sina.com.cn/s/blog_48d4cf2d0102w53t.html 所以，无论如何都必须应答
+ * 消息队列会被堵塞住，所以，无论如何都必须应答
  *
  * @author tangyifei
  * @date 2019年7月6日11:53:58
+ * @see <a href="http://blog.sina.com.cn/s/blog_48d4cf2d0102w53t.html ">RabbitMQ使用不当导致的队列堵塞问题及解决之道</a>
  */
 @Slf4j
 public class MsgSendConfirmCallBack extends BaseCallBack {

@@ -8,10 +8,10 @@ import org.springframework.context.event.ContextRefreshedEvent;
 
 /**
  * spring boot容器启动并加载完后，开一些线程或者一些程序来干某些事情
- * 相关博客请查看 https://www.jianshu.com/p/01f7a971a4b9
  *
  * @author tangyifei
  * @date 2019年7月6日14:07:10
+ * @see <a href="https://www.jianshu.com/p/01f7a971a4b9>获取spring上下文中的bean</a>
  */
 @Slf4j
 public class ApplicationStartup implements ApplicationListener<ContextRefreshedEvent> {
