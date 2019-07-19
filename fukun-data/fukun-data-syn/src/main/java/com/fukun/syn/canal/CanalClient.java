@@ -7,7 +7,6 @@ import com.alibaba.otter.canal.protocol.Message;
 import com.fukun.syn.config.redis.RedisHandler;
 import com.fukun.syn.constant.Constants;
 import com.fukun.syn.constant.MessageComponentTypeEnums;
-import com.fukun.syn.model.MessageEntry;
 import com.google.gson.Gson;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -19,10 +18,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 import java.net.InetSocketAddress;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 import static com.fukun.syn.constant.Constants.MAX_TRY_COUNT_PREFIX_KEY;
 
@@ -91,59 +87,75 @@ public class CanalClient {
         }
     }
 
-    private void printEntry(List<Entry> entrys, RabbitTemplate rabbitTemplate, RedisHandler redisHandler) {
-        MessageEntry messageEntry;
-        for(Entry entry : entrys) {
-            messageEntry = new MessageEntry();
-            if (entry.getEntryType() == EntryType.TRANSACTIONBEGIN || entry.getEntryType() == EntryType.TRANSACTIONEND) {
-                continue;
+    private void printEntry(List<Entry> entries, RabbitTemplate rabbitTemplate, RedisHandler redisHandler) {
+        Map<String, Object> resultMap = new HashMap<>(1 << 3);
+        // 如果实现随机访问的列表，那么使用普通for循环
+        if (entries instanceof RandomAccess) {
+            int size = entries.size();
+            Entry entry;
+            for(int i = 0; i < size; i++) {
+                entry = entries.get(i);
+                parseBinlogToMap(rabbitTemplate, redisHandler, resultMap, entry);
             }
-
-            RowChange rowChange;
-            try {
-                rowChange = RowChange.parseFrom(entry.getStoreValue());
-            } catch (Exception e) {
-                throw new RuntimeException("ERROR ## parser of eromanga-event has an error , data:" + entry.toString(),
-                        e);
+        } else {
+            Entry entry;
+            for(Iterator<Entry> entryIterator = entries.iterator(); entryIterator.hasNext(); ) {
+                entry = entryIterator.next();
+                parseBinlogToMap(rabbitTemplate, redisHandler, resultMap, entry);
             }
-
-            // 获取事件类型 UPDATE INSERT DELETE CREATE ALTER ERASE
-            EventType eventType = rowChange.getEventType();
-            if (log.isInfoEnabled()) {
-                log.info(String.format("================>>>>binlog[%s:%s] , name[%s,%s] , eventType : %s",
-                        entry.getHeader().getLogfileName(), entry.getHeader().getLogfileOffset(),
-                        entry.getHeader().getSchemaName(), entry.getHeader().getTableName(),
-                        eventType));
-            }
-            messageEntry.setLogfileName(entry.getHeader().getLogfileName());
-            messageEntry.setLogfileOffset(entry.getHeader().getLogfileOffset());
-            messageEntry.setSchemaName(entry.getHeader().getSchemaName());
-            messageEntry.setTableName(entry.getHeader().getTableName());
-            for(RowData rowData : rowChange.getRowDatasList()) {
-                if (eventType == EventType.DELETE) {
-                    messageEntry.setEventType(EventType.DELETE);
-                    printColumn(rowData.getBeforeColumnsList(), 1, messageEntry);
-                } else if (eventType == EventType.INSERT) {
-                    messageEntry.setEventType(EventType.INSERT);
-                    printColumn(rowData.getAfterColumnsList(), 1, messageEntry);
-                } else {
-                    messageEntry.setEventType(EventType.UPDATE);
-                    if (log.isInfoEnabled()) {
-                        log.info("------->>> 更新之前的行数据");
-                    }
-                    printColumn(rowData.getBeforeColumnsList(), 0, messageEntry);
-                    if (log.isInfoEnabled()) {
-                        log.info("------->>> 更新之后的行数据");
-                    }
-                    printColumn(rowData.getAfterColumnsList(), 1, messageEntry);
-                }
-            }
-            // 发送消息到rabbitMq
-            sendToRabbitmq(messageEntry, rabbitTemplate, redisHandler);
         }
+
     }
 
-    private static void printColumn(List<Column> columns, int isNotBefore, MessageEntry messageEntry) {
+    private void parseBinlogToMap(RabbitTemplate rabbitTemplate, RedisHandler redisHandler, Map<String, Object> resultMap, Entry entry) {
+        if (entry.getEntryType() == EntryType.TRANSACTIONBEGIN || entry.getEntryType() == EntryType.TRANSACTIONEND) {
+            return;
+        }
+
+        RowChange rowChange;
+        try {
+            rowChange = RowChange.parseFrom(entry.getStoreValue());
+        } catch (Exception e) {
+            throw new RuntimeException("ERROR ## parser of eromanga-event has an error , data:" + entry.toString(),
+                    e);
+        }
+
+        // 获取事件类型 UPDATE INSERT DELETE CREATE ALTER ERASE
+        EventType eventType = rowChange.getEventType();
+        if (log.isInfoEnabled()) {
+            log.info(String.format("================>>>>binlog[%s:%s] , name[%s,%s] , eventType : %s",
+                    entry.getHeader().getLogfileName(), entry.getHeader().getLogfileOffset(),
+                    entry.getHeader().getSchemaName(), entry.getHeader().getTableName(),
+                    eventType));
+        }
+        resultMap.put("logfileName", entry.getHeader().getLogfileName());
+        resultMap.put("logfileOffset", entry.getHeader().getLogfileOffset());
+        resultMap.put("schemaName", entry.getHeader().getSchemaName());
+        resultMap.put("tableName", entry.getHeader().getTableName());
+        for(RowData rowData : rowChange.getRowDatasList()) {
+            if (eventType == EventType.DELETE) {
+                resultMap.put("eventType", EventType.DELETE);
+                printColumn(rowData.getBeforeColumnsList(), 1, resultMap);
+            } else if (eventType == EventType.INSERT) {
+                resultMap.put("eventType", EventType.INSERT);
+                printColumn(rowData.getAfterColumnsList(), 1, resultMap);
+            } else {
+                resultMap.put("eventType", EventType.UPDATE);
+                if (log.isInfoEnabled()) {
+                    log.info("------->>> 更新之前的行数据");
+                }
+                printColumn(rowData.getBeforeColumnsList(), 0, resultMap);
+                if (log.isInfoEnabled()) {
+                    log.info("------->>> 更新之后的行数据");
+                }
+                printColumn(rowData.getAfterColumnsList(), 1, resultMap);
+            }
+        }
+        // 发送消息到rabbitMq
+        sendToRabbitmq(resultMap, rabbitTemplate, redisHandler);
+    }
+
+    private static void printColumn(List<Column> columns, int isNotBefore, Map<String, Object> resultMap) {
         int columnSize = columns.size();
         if (isNotBefore == 0) {
             Map<String, Object> beforeMap = new HashMap<>(columnSize);
@@ -153,7 +165,7 @@ public class CanalClient {
                 }
                 beforeMap.put(column.getName(), column.getValue());
             }
-            messageEntry.setBefore(beforeMap);
+            resultMap.put("before", beforeMap);
         } else if (isNotBefore == 1) {
             Map<String, Object> afterMap = new HashMap<>(columnSize);
             for(Column column : columns) {
@@ -162,17 +174,17 @@ public class CanalClient {
                 }
                 afterMap.put(column.getName(), column.getValue());
             }
-            messageEntry.setAfter(afterMap);
+            resultMap.put("after", afterMap);
         }
     }
 
-    private void sendToRabbitmq(MessageEntry messageEntry, RabbitTemplate rabbitTemplate, RedisHandler redisHandler) {
+    private void sendToRabbitmq(Map<String, Object> resultMap, RabbitTemplate rabbitTemplate, RedisHandler redisHandler) {
         // 发送消息
         if (MessageComponentTypeEnums.RABBITMQ.getType() == messageComponentType) {
             String msgId = System.currentTimeMillis() + "$" + UUID.randomUUID().toString();
             redisHandler.set(MAX_TRY_COUNT_PREFIX_KEY + msgId, 0);
             Gson gson = new Gson();
-            String json = gson.toJson(messageEntry);
+            String json = gson.toJson(resultMap);
             org.springframework.amqp.core.Message message = MessageBuilder.withBody(json.getBytes()).setContentEncoding("UTF-8")
                     .setContentType(MessageProperties.CONTENT_TYPE_JSON).setCorrelationId(msgId).build();
             CorrelationData correlationData = new CorrelationData(msgId);
