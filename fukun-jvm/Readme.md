@@ -127,6 +127,8 @@ GC收集器常用组合
 [Full GC [PSYoungGen: 8192K->8192K(9216K)] [ParOldGen: 20437K->20437K(20480K)] 28629K->28629K(29696K), [Metaspace: 8469K->8469K(1056768K)], 0.1240311 secs] [Times: user=0.42 sys=0.00, real=0.12 secs]
 
 ```
+# 分享连接
+[HashMap原理以及使用](https://crossoverjie.top/2018/07/23/java-senior/ConcurrentHashMap/)
 
 
 
