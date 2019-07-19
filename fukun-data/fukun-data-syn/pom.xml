@@ -78,6 +78,11 @@
             <version>${canal.version}</version>
         </dependency>
         <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-configuration-processor</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
             <groupId>com.fukun</groupId>
             <artifactId>fukun-commons-public</artifactId>
             <version>${parent.version}</version>
