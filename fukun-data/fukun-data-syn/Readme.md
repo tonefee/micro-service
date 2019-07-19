@@ -134,7 +134,10 @@ canal client将从canal server获取的binlog数据最终以json行格式保存�
 直接发送到MQ)。   
 binlog生产端和消费端的之间，增加MQ作为缓冲，增加容错度和动态扩展性。  
 
-# 从头创建工程
+**`这里实现的canal客户端，如果 emptyCount 达到了上限120，就退出相关的连接监听，就不在执行数据同步的操作了，
+所以可以调节上限 totalEmptyCount ，但一般不需要改动，因为数据库的记录只要用户使用系统，都会导致数据库
+相关记录的变更，这样就会产生binlog日志，emptyCount 的值不会一直增加，达到上限。  `**
+
 ## 依赖配置
 ``` 
 <dependency>
