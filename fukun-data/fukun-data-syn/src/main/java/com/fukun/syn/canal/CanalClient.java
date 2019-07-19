@@ -108,7 +108,8 @@ public class CanalClient {
     }
 
     private void parseBinlogToMap(RabbitTemplate rabbitTemplate, RedisHandler redisHandler, Map<String, Object> resultMap, Entry entry) {
-        if (entry.getEntryType() == EntryType.TRANSACTIONBEGIN || entry.getEntryType() == EntryType.TRANSACTIONEND) {
+        EntryType entryType;
+        if ((entryType = entry.getEntryType()) == EntryType.TRANSACTIONBEGIN || entryType == EntryType.TRANSACTIONEND) {
             return;
         }
 
@@ -122,16 +123,21 @@ public class CanalClient {
 
         // 获取事件类型 UPDATE INSERT DELETE CREATE ALTER ERASE
         EventType eventType = rowChange.getEventType();
+        Header header = entry.getHeader();
+        String logfileName = header.getLogfileName();
+        long logfileOffset = header.getLogfileOffset();
+        String schemaName = header.getSchemaName();
+        String tableName = header.getTableName();
         if (log.isInfoEnabled()) {
             log.info(String.format("================>>>>binlog[%s:%s] , name[%s,%s] , eventType : %s",
-                    entry.getHeader().getLogfileName(), entry.getHeader().getLogfileOffset(),
-                    entry.getHeader().getSchemaName(), entry.getHeader().getTableName(),
+                    logfileName, logfileOffset,
+                    schemaName, tableName,
                     eventType));
         }
-        resultMap.put("logfileName", entry.getHeader().getLogfileName());
-        resultMap.put("logfileOffset", entry.getHeader().getLogfileOffset());
-        resultMap.put("schemaName", entry.getHeader().getSchemaName());
-        resultMap.put("tableName", entry.getHeader().getTableName());
+        resultMap.put("logfileName", logfileName);
+        resultMap.put("logfileOffset", logfileOffset);
+        resultMap.put("schemaName", schemaName);
+        resultMap.put("tableName", tableName);
         for(RowData rowData : rowChange.getRowDatasList()) {
             if (eventType == EventType.DELETE) {
                 resultMap.put("eventType", EventType.DELETE);
