@@ -1,7 +1,6 @@
 package com.fukun.syn.config.rabbitmq;
 
 import com.fukun.commons.constants.RabbitMqConstants;
-import com.fukun.syn.constant.Constants;
 import com.fukun.syn.producer.MsgSendConfirmCallBack;
 import com.fukun.syn.producer.MsgSendReturnCallback;
 import lombok.extern.slf4j.Slf4j;
@@ -93,7 +92,7 @@ public class RabbitMqConfiguration {
      */
     @Bean
     FanoutExchange fanoutExchange() {
-        return new FanoutExchange(Constants.FANOUT_EXCHANGE_NAME, true, false);
+        return new FanoutExchange(RabbitMqConstants.FANOUT_EXCHANGE_NAME, true, false);
     }
 
     /**
@@ -114,7 +113,7 @@ public class RabbitMqConfiguration {
 //       x-dead-letter-routing-key    声明 死信路由键
         args.put("x-dead-letter-routing-key", RabbitMqConstants.DEAD_LETTER_ROUTING_KEY);
         // 队列持久化
-        return new Queue(Constants.FANOUT_QUEUE_NAME, true, false, false, args);
+        return new Queue(RabbitMqConstants.FANOUT_QUEUE_NAME, true, false, false, args);
     }
 
     @Bean

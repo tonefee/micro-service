@@ -4,8 +4,8 @@ import com.alibaba.otter.canal.client.CanalConnector;
 import com.alibaba.otter.canal.client.CanalConnectors;
 import com.alibaba.otter.canal.protocol.CanalEntry.*;
 import com.alibaba.otter.canal.protocol.Message;
+import com.fukun.commons.constants.RabbitMqConstants;
 import com.fukun.syn.config.redis.RedisHandler;
-import com.fukun.syn.constant.Constants;
 import com.fukun.syn.constant.MessageComponentTypeEnums;
 import com.google.gson.Gson;
 import lombok.Data;
@@ -201,7 +201,7 @@ public class CanalClient {
                     log.error("缓存错误：{}", e);
                 }
             }
-            rabbitTemplate.convertAndSend(Constants.FANOUT_EXCHANGE_NAME, null,
+            rabbitTemplate.convertAndSend(RabbitMqConstants.FANOUT_EXCHANGE_NAME, null,
                     message, correlationData);
         }
 

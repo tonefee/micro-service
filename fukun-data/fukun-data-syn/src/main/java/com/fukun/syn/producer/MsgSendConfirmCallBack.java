@@ -1,6 +1,6 @@
 package com.fukun.syn.producer;
 
-import com.fukun.syn.constant.Constants;
+import com.fukun.commons.constants.RabbitMqConstants;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.connection.CorrelationData;
@@ -75,7 +75,7 @@ public class MsgSendConfirmCallBack extends BaseCallBack {
                 if (null != cacheKey) {
                     Message message = (Message) cacheKey;
                     // 重新发送消息
-                    rabbitTemplate.convertAndSend(Constants.FANOUT_EXCHANGE_NAME, null,
+                    rabbitTemplate.convertAndSend(RabbitMqConstants.FANOUT_EXCHANGE_NAME, null,
                             message, correlationData);
                 }
             }

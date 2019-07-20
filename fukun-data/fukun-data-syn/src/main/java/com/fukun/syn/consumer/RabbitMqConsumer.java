@@ -3,7 +3,6 @@ package com.fukun.syn.consumer;
 import com.alibaba.otter.canal.protocol.CanalEntry;
 import com.fukun.commons.constants.RabbitMqConstants;
 import com.fukun.syn.config.redis.RedisHandler;
-import com.fukun.syn.constant.Constants;
 import com.fukun.syn.model.MessageEntry;
 import com.google.gson.Gson;
 import com.rabbitmq.client.Channel;
@@ -34,7 +33,7 @@ public class RabbitMqConsumer {
     @Resource
     private RedisHandler redisHandler;
 
-    @RabbitListener(queues = {Constants.FANOUT_QUEUE_NAME})
+    @RabbitListener(queues = {RabbitMqConstants.FANOUT_QUEUE_NAME})
     public void handleObjectMessage(Message message, Channel channel) throws IOException {
         try {
             // 为了测试死信队列，就是说消息处理失败，处理失败的消息会进入死信队列
