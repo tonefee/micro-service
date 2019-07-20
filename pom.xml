@@ -20,6 +20,7 @@
         <module>fukun-cache</module>
         <module>fukun-jvm</module>
         <module>fukun-data</module>
+        <module>fukun-search</module>
     </modules>
 
     <!--    <repositories>
