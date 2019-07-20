@@ -77,5 +77,15 @@ public final class RabbitMqConstants {
      * 死信队列的转发队列的路由key
      */
     public final static String DEAD_LETTER_REDIRECT_ROUTING_KEY = "KEY_R";
+
+    /**
+     * 广播交换机的名称
+     */
+    public final static String FANOUT_EXCHANGE_NAME = "data_syn_fanout_exchange";
+
+    /**
+     * 队列的名称
+     */
+    public final static String FANOUT_QUEUE_NAME = "data_syn_queue";
     /*********************************** 消息队列常量结束 **************************/
 }
