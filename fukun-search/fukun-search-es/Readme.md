@@ -131,6 +131,151 @@ http.cors.allow-origin: "*"
 
 上面的步骤在[Install Elasticsearch from archive on Linux or MacOS](https://www.elastic.co/guide/en/elasticsearch/reference/current/targz.html)中有说明。  
 
+# 安装 IK分词器
+ElasticSearch（以下简称ES）默认的分词器是标准分词器Standard，如果直接使用，在处理中文内容的搜索时，中文词语被分成了一个一个的汉字，因此引入中文分词器IK就能解决这个问题，同时用户可以配置自己的扩展字典、远程扩展字典等。  
+注意：IK分词器的版本一定要与ElasticSearch版本对应。  
+进入[IK分词器](https://github.com/medcl/elasticsearch-analysis-ik/releases) 下载ik分词器，注意我使用的es版本是7.2.0，所以下载ik的版本是7.2.0的。  
+如果IK与ES版本不对应，运行ES时会报错说两者版本不对，导致无法启动。  
+注意：我下载了IK分词器表面是7.2.0版本的，得到的处理过后的zip解压开是7.0.0版本的，只需要修改你的路径下的pom里面的版本改成7.2.0即可。  
+我的ik分词器下载到了/home/tang/目录下，在 /home/tang/elasticsearch/plugins 目录下创建analysis-ik，再次将 elasticsearch-analysis-ik-7.2.0.zip
+解压到analysis-ik目录下，执行 unzip elasticsearch-analysis-ik-7.2.0.zip -d /home/tang/elasticsearch/plugins/analysis-ik即可，如下：  
+![搜索引擎](pictures/p18.png) 
+
+重启ES，使用pkill -F es.pid关闭es，以前我的节点名称为fukun_es_1，现在我以fukun_es_2为节点名字启动，
+执行 ./elasticsearch -d -p es.pid -Ecluster.name=fukun_es -Enode.name=fukun_es_2，查看日志 fukun_es.log，如下：  
+![搜索引擎](pictures/p19.png) 
+也可以调用 curl -X GET http://192.168.0.43:9200/_cat/plugins 获取插件信息，如下：  
+ ```
+ D:\GitHub>curl -X GET http://192.168.0.43:9200/_cat/plugins
+ fukun_es_2 analysis-ik 7.2.0
+ ```
+说明ik分词器配置成功，也可以使用kibana的可视化界面获取插件信息，如下：  
+![搜索引擎](pictures/p20.png) 
+
+IK分词器的两种分词模式：  
+ik_max_word: 会将文本做最细粒度的拆分。  
+ik_smart: 会做最粗粒度的拆分。  
+
+## ik测试
+这里使用_analyze 这个api对中文段落进行分词，使用最细粒度的拆分方式（ik_max_word）进行分词，如下：  
+```
+POST /_analyze
+{
+  "analyzer": "ik_max_word",
+  "text":"中华人民共和国国歌"
+}
+```
+如下图所示：  
+
+![搜索引擎](pictures/p21.png) 
+
+分词的结果如下：  
+```
+{
+  "tokens" : [
+    {
+      "token" : "中华人民共和国",
+      "start_offset" : 0,
+      "end_offset" : 7,
+      "type" : "CN_WORD",
+      "position" : 0
+    },
+    {
+      "token" : "中华人民",
+      "start_offset" : 0,
+      "end_offset" : 4,
+      "type" : "CN_WORD",
+      "position" : 1
+    },
+    {
+      "token" : "中华",
+      "start_offset" : 0,
+      "end_offset" : 2,
+      "type" : "CN_WORD",
+      "position" : 2
+    },
+    {
+      "token" : "华人",
+      "start_offset" : 1,
+      "end_offset" : 3,
+      "type" : "CN_WORD",
+      "position" : 3
+    },
+    {
+      "token" : "人民共和国",
+      "start_offset" : 2,
+      "end_offset" : 7,
+      "type" : "CN_WORD",
+      "position" : 4
+    },
+    {
+      "token" : "人民",
+      "start_offset" : 2,
+      "end_offset" : 4,
+      "type" : "CN_WORD",
+      "position" : 5
+    },
+    {
+      "token" : "共和国",
+      "start_offset" : 4,
+      "end_offset" : 7,
+      "type" : "CN_WORD",
+      "position" : 6
+    },
+    {
+      "token" : "共和",
+      "start_offset" : 4,
+      "end_offset" : 6,
+      "type" : "CN_WORD",
+      "position" : 7
+    },
+    {
+      "token" : "国",
+      "start_offset" : 6,
+      "end_offset" : 7,
+      "type" : "CN_CHAR",
+      "position" : 8
+    },
+    {
+      "token" : "国歌",
+      "start_offset" : 7,
+      "end_offset" : 9,
+      "type" : "CN_WORD",
+      "position" : 9
+    }
+  ]
+}
+```
+使用最粗粒度的拆分方式（ik_smart）分词，如下：  
+```
+POST /_analyze
+{
+  "analyzer": "ik_smart",
+  "text":"中华人民共和国国歌"
+}
+```
+结果如下：  
+```
+{
+  "tokens" : [
+    {
+      "token" : "中华人民共和国",
+      "start_offset" : 0,
+      "end_offset" : 7,
+      "type" : "CN_WORD",
+      "position" : 0
+    },
+    {
+      "token" : "国歌",
+      "start_offset" : 7,
+      "end_offset" : 9,
+      "type" : "CN_WORD",
+      "position" : 1
+    }
+  ]
+}  
+```
+
 # 安装 Kibana
 进入[Download Kibana](https://www.elastic.co/cn/downloads/kibana) 页面，下载对应版本的kibana，我这里下载7.2.0版本。  
 该页面有对应的安装步骤，如下：  
