@@ -196,7 +196,36 @@ yellow open   customer ezirYJS5TBWkmjihsLLo6g   1   1          0            0   
 
 ## 索引与查询文档
 让我们往"customer"索引里放点东西。记住，为了索引一个文档，我们必须告诉Elasticsearch这个文档的type。  
-让我们索引一个简单的customer文档到customer索引，external类型，ID是1：  
+让我们索引一个简单的customer文档到customer索引，external类型，ID是1，这里我使用kibana可视化界面去操作
+kibana的安装请参考安装kibana这一节，进入kibana界面。点击左边栏中的Dev Tools，然后选择Console选项，
+在里面可以发送相关的请求和参数远程对es进行操作，如下：  
+ ![搜索引擎](pictures/p13.png)  
+下面我们使用它来向es的customer索引中添加相应的文档，添加请求uri与参数后，点击右边的三角去执行，
+如下：  
+ ![搜索引擎](pictures/p14.png)  
+Elasticsearch并不要求你创建一个索引后才能向里面放入文档。如果es事先不存在的话，Elasticsearch会自动创建"customer"索引。    
+
+添加成功，然后使用  GET /customer/external/1?pretty 获取customer索引中添加的文档，如下：  
+![搜索引擎](pictures/p15.png)  
+也可以在终端中直接访问es，看一下获取的文档信息是不是跟kibana中获取的文档信息一样，如下：  
+```
+D:\GitHub>curl -X GET http://192.168.0.43:9200/customer/external/1?pretty
+{
+  "_index" : "customer",
+  "_type" : "external",
+  "_id" : "1",
+  "_version" : 2,
+  "_seq_no" : 1,
+  "_primary_term" : 1,
+  "found" : true,
+  "_source" : {
+    "name" : "tangyifei",
+    "age" : "23"
+  }
+}
+
+```
+发现一样，使用kibana可视化界面操作es的确很方便。  
 
 # 安装 Kibana
 进入[Download Kibana](https://www.elastic.co/cn/downloads/kibana) 页面，下载对应版本的kibana，我这里下载7.2.0版本。  
