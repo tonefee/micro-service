@@ -30,21 +30,48 @@ wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-7.2.0-li
 解压成功，使用 cd elasticsearch-7.2.0 进入解压后的目录，如下：  
 ![搜索引擎](pictures/p4.png)   
 
-进入 bin 目录，使用 ./elasticsearch -d -p es.pid 运行es，-d 表示以守护进程启动，-p 表示指向进程id的文件，如下：  
+现在可以启动节点和单个集群，进入 bin 目录，使用 ./elasticsearch -d -p es.pid 运行es，如果需要在
+es启动的过程中指定集群名字和节点的名字，执行 ./elasticsearch -d -p es.pid -Ecluster.name=fukun_es -Enode.name=fukun_es_1， 
+-d 表示以守护进程启动，-p 表示指向进程id的文件，如果启动的过程中，出现如下的错误：    
 ![搜索引擎](pictures/p5.png)  
 
-发现报错了，elasticsearch是不允许使用root用户启动的，解决办法如下：  
+表明elasticsearch是不允许使用root用户启动的，解决办法如下：  
 1、使用 cd /home/tang/ 切换到es相关的目录，将 elasticsearch-7.2.0 重命名为 elasticsearch。  
 2、使用 groupadd es 增加用户组，名为es。  
 3、使用 useradd es -g es -p elasticsearch 创建一个用户es并加入es这个用户组中。  
 4、使用 chown -R es:es  elasticsearch 更改 elasticsearch 文件夹及内部文件的所属用户及组为 es:es。  
 5、使用 su es 切换到es用户再次使用 ./elasticsearch -d -p es.pid 启动，并进入 logs 目录，查看 es 相关的日志。  
 
-如果启动的过程中，没有出现任何错误，这时 elasticsearch 就会在默认的9200端口运行，
+启动完成，因为启动的时候我指定了集群的名称fukun_es，所以进入logs目录查看fukun_es.log，而不是elasticsearch.log，如下：  
+```
+[2019-07-22T11:03:50,889][INFO ][o.e.h.AbstractHttpServerTransport] [fukun_es_1] publish_address {172.17.0.1:9200}, bound_addresses {[::]:9200}
+[2019-07-22T11:03:50,890][INFO ][o.e.n.Node               ] [fukun_es_1] started
+
+```
+我们可以看到我们的节点叫做fukun_es_1（每个人遇到的名称都不相同，因为启动es时指定的节点名称不同）已经被启动并且选定它自己作为主节点在一个集群里。  
+这时 elasticsearch 就会在默认的9200端口运行，即Elasticsearch默认使用9200端口来提供REST API访问，如果有必要它是可以配置的。    
+
 这时，打开另一个命令行窗口，请求该端口，使用 curl http://localhost:9200/ 会得到说明信息，如果出现如下的
 响应，说明启动成功，如下：  
-![搜索引擎](pictures/p6.png)   
-
+```
+{
+  "name" : "fukun_es_1",
+  "cluster_name" : "fukun_es",
+  "cluster_uuid" : "l_u3tVbfQnqkHiHLHhgb_g",
+  "version" : {
+    "number" : "7.2.0",
+    "build_flavor" : "default",
+    "build_type" : "tar",
+    "build_hash" : "508c38a",
+    "build_date" : "2019-06-20T15:54:18.811730Z",
+    "build_snapshot" : false,
+    "lucene_version" : "8.0.0",
+    "minimum_wire_compatibility_version" : "6.8.0",
+    "minimum_index_compatibility_version" : "6.0.0-beta1"
+  },
+  "tagline" : "You Know, for Search"
+}
+```
 上面代码中，请求9200端口，Elastic 返回一个 JSON 对象，包含当前节点、集群、版本等信息。  
 按下 Ctrl + C，Elastic 就会停止运行。  
 默认情况下，Elastic 只允许本机访问，如果需要远程访问，可以修改 Elastic 安装目录的config/elasticsearch.yml文件，去掉network.host的注释，将它的值改成0.0.0.0，然后重新启动 Elastic。  
@@ -86,6 +113,34 @@ http.cors.allow-origin: "*"
 ![搜索引擎](pictures/p8.png)  
 
 上面的步骤在[Install Elasticsearch from archive on Linux or MacOS](https://www.elastic.co/guide/en/elasticsearch/reference/current/targz.html)中有说明。  
+
+# es的基本概念
+## Node 与 Cluster
+Elastic 本质上是一个分布式数据库，允许多台服务器协同工作，每台服务器可以运行多个 Elastic 实例。  
+单个 Elastic 实例称为一个节点（node）。一组节点构成一个集群（cluster）。  
+## Index
+Elastic 会索引所有字段，经过处理后写入一个反向索引（Inverted Index）。查找数据的时候，直接查找该索引。  
+所以，Elastic 数据管理的顶层单位就叫做 Index（索引）。它是单个数据库的同义词。**`每个 Index （即数据库）的名字必须是小写`**。  
+下面的命令可以查看当前节点的所有 Index。  
+```
+curl -X GET http://192.168.0.43:9200/_cat/indices?v
+```
+返回如下的信息：  
+health status index uuid pri rep docs.count docs.deleted store.size pri.store.size    
+这表明我们还没有索引在集群中。  
+
+通过以下的API我们可以看到集群中的节点列表。  
+```
+curl -X GET http://192.168.0.43:9200/_cat/nodes?v  
+```
+返回信息如下：  
+```  
+ip         heap.percent ram.percent cpu load_1m load_5m load_15m node.role master name
+172.17.0.1           13          96   3    0.00    0.04     0.05 mdi       *      fukun_es_1
+
+```
+如果es启动的时候没有设置es节点名称，默认es节点名是localhost.localdomain，我们的节点叫做"fukun_es_1"，目前我们集群里唯一的一个节点。    
+
 
 # 安装 Kibana
 进入[Download Kibana](https://www.elastic.co/cn/downloads/kibana) 页面，下载对应版本的kibana，我这里下载7.2.0版本。  
