@@ -276,7 +276,7 @@ POST /_analyze
   ]
 }  
 ```
-### 利用kibana插件对Elasticsearch进行映射
+### 利用kibana插件对Elasticsearch创建映射并对相关字段指定分词器
 #### 映射（mapping）
 映射是创建索引的时候，可以预先定义字段的类型以及相关属性。  
 Elasticsearch会根据JSON源数据的基础类型去猜测你想要的字段映射。将输入的数据变成可搜索的索引项。  
