@@ -132,7 +132,7 @@ http.cors.allow-origin: "*"
 上面的步骤在[Install Elasticsearch from archive on Linux or MacOS](https://www.elastic.co/guide/en/elasticsearch/reference/current/targz.html)中有说明。  
 
 # 安装 IK分词器
-ElasticSearch（以下简称ES）默认的分词器是标准分词器Standard，如果直接使用，在处理中文内容的搜索时，中文词语被分成了一个一个的汉字，因此引入中文分词器IK就能解决这个问题，同时用户可以配置自己的扩展字典、远程扩展字典等。  
+Elastic 的分词器称为 analyzer，对于中文需要指定中文分词器，不能使用默认的英文分词器，ElasticSearch（以下简称ES）默认的分词器是标准分词器Standard，如果直接使用，在处理中文内容的搜索时，中文词语被分成了一个一个的汉字，因此引入中文分词器IK就能解决这个问题，同时用户可以配置自己的扩展字典、远程扩展字典等。  
 注意：IK分词器的版本一定要与ElasticSearch版本对应。  
 进入[IK分词器](https://github.com/medcl/elasticsearch-analysis-ik/releases) 下载ik分词器，注意我使用的es版本是7.2.0，所以下载ik的版本是7.2.0的。  
 如果IK与ES版本不对应，运行ES时会报错说两者版本不对，导致无法启动。  
@@ -142,7 +142,8 @@ ElasticSearch（以下简称ES）默认的分词器是标准分词器Standard，
 ![搜索引擎](pictures/p18.png) 
 
 重启ES，使用pkill -F es.pid关闭es，以前我的节点名称为fukun_es_1，现在我以fukun_es_2为节点名字启动，
-执行 ./elasticsearch -d -p es.pid -Ecluster.name=fukun_es -Enode.name=fukun_es_2，查看日志 fukun_es.log，如下：  
+执行 ./elasticsearch -d -p es.pid -Ecluster.name=fukun_es -Enode.name=fukun_es_2，查看日志 fukun_es.log，
+从日志可以看出，自动加载这个新安装的插件，如下：  
 ![搜索引擎](pictures/p19.png) 
 也可以调用 curl -X GET http://192.168.0.43:9200/_cat/plugins 获取插件信息，如下：  
  ```
@@ -275,6 +276,68 @@ POST /_analyze
   ]
 }  
 ```
+### 利用kibana插件对Elasticsearch进行映射
+#### 映射（mapping）
+映射是创建索引的时候，可以预先定义字段的类型以及相关属性。  
+Elasticsearch会根据JSON源数据的基础类型去猜测你想要的字段映射。将输入的数据变成可搜索的索引项。  
+Mapping就是我们自己定义字段的数据类型，同时告诉Elasticsearch如何索引数据以及是否可以被搜索。  
+作用：会让索引建立的更加细致和完善。  
+类型：静态映射和动态映射。  
+##### 内置类型
+string类型： text,keyword(string类型在es5已经被弃用)    
+数字类型：long, integer, short, byte, double, float    
+日期类型： date    
+bool类型： boolean    
+binary类型： binary　　    
+复杂类型： object ,nested    
+geo类型： point , geo-shape    
+专业类型: ip, competion    
+mapping 限制的type  
+![搜索引擎](pictures/p22.png)  
+
+#### 创建mapping并指定中文分词器
+新建一个 Index，指定需要分词的字段，下面的命令只针对文本。基本上，凡是需要搜索的中文字段，都要单独设置一下。  
+```
+PUT /accounts
+{
+  "mappings": {
+    "properties": {
+      "person": {
+        "properties": {
+          "user": {
+            "type": "text",
+            "analyzer": "ik_max_word",
+          "search_analyzer": "ik_max_word"
+          },
+          "title": {
+            "type": "text",
+             "analyzer": "ik_max_word",
+          "search_analyzer": "ik_max_word"
+          },
+          "desc": {
+              "type": "text",
+             "analyzer": "ik_max_word",
+          "search_analyzer": "ik_max_word"
+          }
+        }
+      }
+    }
+  }
+}
+```
+返回结果：  
+```
+{
+  "acknowledged" : true,
+  "shards_acknowledged" : true,
+  "index" : "accounts"
+}
+```
+上面代码中，首先新建一个名称为accounts的 Index，里面有一个名称为person的 Type。person有三个字段user、title、desc。  
+这三个字段都是中文，而且类型都是文本（text），所以需要指定中文分词器，不能使用默认的英文分词器。  
+对每个字段指定中文分词器。  
+analyzer是字段文本的分词器，search_analyzer是搜索词的分词器。ik_max_word分词器是插件ik提供的，可以对文本进行最大数量的分词。  
+
 
 # 安装 Kibana
 进入[Download Kibana](https://www.elastic.co/cn/downloads/kibana) 页面，下载对应版本的kibana，我这里下载7.2.0版本。  
