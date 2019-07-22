@@ -131,6 +131,45 @@ http.cors.allow-origin: "*"
 
 上面的步骤在[Install Elasticsearch from archive on Linux or MacOS](https://www.elastic.co/guide/en/elasticsearch/reference/current/targz.html)中有说明。  
 
+# 安装 Kibana
+进入[Download Kibana](https://www.elastic.co/cn/downloads/kibana) 页面，下载对应版本的kibana，我这里下载7.2.0版本。  
+该页面有对应的安装步骤，如下：  
+ ![搜索引擎](pictures/p9.png)  
+ 
+我还是在 /home/tang/ 目录下下载kibana相关的包，使用 
+ 
+```
+ wget https://artifacts.elastic.co/downloads/kibana/kibana-7.2.0-linux-x86_64.tar.gz
+```
+执行以上命令，一定要切换到root用户去执行，如果之前安装es的时候，使用创建的es用户去执行上面命令会报443错误。  
+这个过程很慢，就看你所处网络的速度了。  
+解压 kibana-7.2.0-linux-x86_64.tar.gz 并重命名为 kibana，然后进入kibana/config目录，修改  kibana.yml 文件，
+修改kibana端口号，host和连接es的配置信息，如下：  
+```
+server.port: 5601    
+server.host: "192.168.0.43"  
+elasticsearch.hosts: ["http://192.168.0.43:9200"]  
+kibana.index: ".kibana"
+
+```
+然后进入bin目录，前台启动使用./kibana即可，
+后台启动使用 nohup ./kibana >> kibana.log 2>&1 &，如果出现如下的错误：  
+```
+Error: EACCES: permission denied, open '/home/tang/kibana/optimize/.babelcache.json'
+    at Object.openSync (fs.js:439:3)
+    at Object.writeFileSync (fs.js:1190:35)
+    at save (/home/tang/kibana/node_modules/@babel/register/lib/cache.js:52:15)
+    at process._tickCallback (internal/process/next_tick.js:61:11)
+    at Function.Module.runMain (internal/modules/cjs/loader.js:745:11)
+    at startup (internal/bootstrap/node.js:283:19)
+    at bootstrapNodeJSCore (internal/bootstrap/node.js:743:3)
+```
+要检查你启动kibana的用户是否有此文件夹的权限，进入/home/tang，在root用户下对es用户赋予权限，如下：  
+chown -R es:es kibana  
+然后切换到es用户模式，进入kibana的bin目录再次执行 nohup ./kibana >> kibana.log 2>&1 &，成功启动。   
+然后在浏览器的地址栏中输入 http://192.168.0.43:5601 进入到kibana的首页，如下：  
+ ![搜索引擎](pictures/p12.png)  
+ 
 # es的基本概念
 ## Node 与 Cluster
 Elastic 本质上是一个分布式数据库，允许多台服务器协同工作，每台服务器可以运行多个 Elastic 实例。  
@@ -195,6 +234,8 @@ yellow open   customer ezirYJS5TBWkmjihsLLo6g   1   1          0            0   
 直到另一个节点加入到集群中后。一旦副本被分配到另一个节点后这个索引的状态也将变为green。    
 
 ## 索引与查询文档
+
+### 在索引中创建文档和获取创建后的文档
 让我们往"customer"索引里放点东西。记住，为了索引一个文档，我们必须告诉Elasticsearch这个文档的type。  
 让我们索引一个简单的customer文档到customer索引，external类型，ID是1，这里我使用kibana可视化界面去操作
 kibana的安装请参考安装kibana这一节，进入kibana界面。点击左边栏中的Dev Tools，然后选择Console选项，
@@ -227,45 +268,228 @@ D:\GitHub>curl -X GET http://192.168.0.43:9200/customer/external/1?pretty
 ```
 发现一样，使用kibana可视化界面操作es的确很方便。  
 
-# 安装 Kibana
-进入[Download Kibana](https://www.elastic.co/cn/downloads/kibana) 页面，下载对应版本的kibana，我这里下载7.2.0版本。  
-该页面有对应的安装步骤，如下：  
- ![搜索引擎](pictures/p9.png)  
- 
-我还是在 /home/tang/ 目录下下载kibana相关的包，使用 
- 
-```
- wget https://artifacts.elastic.co/downloads/kibana/kibana-7.2.0-linux-x86_64.tar.gz
-```
-执行以上命令，一定要切换到root用户去执行，如果之前安装es的时候，使用创建的es用户去执行上面命令会报443错误。  
-这个过程很慢，就看你所处网络的速度了。  
-解压 kibana-7.2.0-linux-x86_64.tar.gz 并重命名为 kibana，然后进入kibana/config目录，修改  kibana.yml 文件，
-修改kibana端口号，host和连接es的配置信息，如下：  
-```
-server.port: 5601    
-server.host: "192.168.0.43"  
-elasticsearch.hosts: ["http://192.168.0.43:9200"]  
-kibana.index: ".kibana"
+### 删除索引
+DELETE /customer?pretty  
+![搜索引擎](pictures/p16.png)  
+表示删除成功，
 
+通过以上测试的api可以发现有以下的规律：  
+<REST Verb> /<Index>/<Type>/<ID>   
+<REST Verb>是rest请求的类型，<Index>是索引名，<Type>是文档类型，<ID>是文档ID。   
+
+## 修改你的数据
+Elasticsearch提供了数据操纵和搜索的能力，几乎是实时的。从你index/update/delete数据到它出现在你的搜索结果里， 一般会有一秒的延迟（刷新间隔）。
+这个与其他平台像SQL数据库是一个重要的区别。     
+
+### 创建与替换文档
+其实我在上面的操作中，在索引customer中执行了两次添加文档的操作且id都相同，一次只添加姓名为John Doe的文档信息，另一次添加姓名为tangyifei，年龄为23的
+文档信息，但是发现后一个文档信息会覆盖前一个文档信息，就是说Elasticsearch将会把已经存在的ID为1的文档替换为新文档。  
+如果我们使用一个不同的ID，一个新文档将被建立，ID为1的文档将不受影响。  
+创建文档时，ID部分是可选的。如果不指定，Elasticsearch将会生成一个随机的ID，这个ID在API的返回结果里可以看到，不指定id时，使用POST方式创建文档
+指定id时，使用PUT方式，如下：  
 ```
-然后进入bin目录，前台启动使用./kibana即可，
-后台启动使用 nohup ./kibana >> kibana.log 2>&1 &，如果出现如下的错误：  
+POST /customer/external?pretty
+{
+  "name": "limingcheng"
+}
 ```
-Error: EACCES: permission denied, open '/home/tang/kibana/optimize/.babelcache.json'
-    at Object.openSync (fs.js:439:3)
-    at Object.writeFileSync (fs.js:1190:35)
-    at save (/home/tang/kibana/node_modules/@babel/register/lib/cache.js:52:15)
-    at process._tickCallback (internal/process/next_tick.js:61:11)
-    at Function.Module.runMain (internal/modules/cjs/loader.js:745:11)
-    at startup (internal/bootstrap/node.js:283:19)
-    at bootstrapNodeJSCore (internal/bootstrap/node.js:743:3)
+![搜索引擎](pictures/p17.png)  
+
+### 更新文档
+注意实际上Elasticsearch并不在内部更新文档，不论何时你更新一个文档时，Elasticsearch是将旧文档删除，然后创建一个更新后的新文档。    
+下面的例子展示了将ID为2的文档更新name字段，并且新增age字段： 
 ```
-要检查你启动kibana的用户是否有此文件夹的权限，进入/home/tang，在root用户下对es用户赋予权限，如下：  
-chown -R es:es kibana  
-然后切换到es用户模式，进入kibana的bin目录再次执行 nohup ./kibana >> kibana.log 2>&1 &，成功启动。   
-然后在浏览器的地址栏中输入 http://192.168.0.43:5601 进入到kibana的首页，如下：  
- ![搜索引擎](pictures/p12.png)  
- 
+POST /customer/external/2/_update
+{
+  "doc": { "name": "liuyifei", "age": 33 }
+} 
+```
+然后使用 GET /customer/external/2 返回如下的信息：  
+```
+{
+  "_index" : "customer",
+  "_type" : "external",
+  "_id" : "2",
+  "_version" : 2,
+  "_seq_no" : 4,
+  "_primary_term" : 1,
+  "found" : true,
+  "_source" : {
+    "name" : "liuyifei",
+    "age" : 33
+  }
+}
+```
+说明修改id为2的文档成功。  
+还可以使用一些简单的脚本，下面我们把liuyifei的年龄加5：  
+```
+POST /customer/external/2/_update?pretty
+{
+  "script" : "ctx._source.age += 5"
+}
+```
+然后使用 GET /customer/external/2 返回如下的信息：  
+```
+{
+  "_index" : "customer",
+  "_type" : "external",
+  "_id" : "2",
+  "_version" : 3,
+  "_seq_no" : 5,
+  "_primary_term" : 1,
+  "found" : true,
+  "_source" : {
+    "name" : "liuyifei",
+    "age" : 38
+  }
+}
+```
+年龄已经加上了5，变成了38岁。  
+在上面这个例子里，ctx._source 引用的是当前将要被更新的文档。    
+
+### 删除文档
+删除一个文档是相当简单的：  
+DELETE /customer/external/2?pretty    
+返回结果：  
+```
+{
+  "_index" : "customer",
+  "_type" : "external",
+  "_id" : "2",
+  "_version" : 4,
+  "result" : "deleted",
+  "_shards" : {
+    "total" : 2,
+    "successful" : 1,
+    "failed" : 0
+  },
+  "_seq_no" : 6,
+  "_primary_term" : 1
+}
+```
+其他的删除api请进入[Delete By Query API](https://www.elastic.co/guide/en/elasticsearch/reference/7.2/docs-delete-by-query.html)进行查看，
+这里介绍了根据特定条件删除所有的文档。值得注意的是通过Delete By Query API删除所有的索引比删除所有文档要困难的多。  
+
+### 批处理
+除了上面介绍的对单一文档进行操作外，Elasticsearch也提供了批量处理的能力，通过使用_bulkAPI。这个功能是很重要的，它提供了不同的机制来做多个操作，减少了与服务器直接来回传递数据的次数。  
+```
+POST /customer/external/_bulk?pretty
+{"index":{"_id":"3"}}
+{"name": "John Doe" }
+{"index":{"_id":"4"}}
+{"name": "Jane Doe" }
+```
+返回信息：  
+```
+{
+  "took" : 69,
+  "errors" : false,
+  "items" : [
+    {
+      "index" : {
+        "_index" : "customer",
+        "_type" : "external",
+        "_id" : "3",
+        "_version" : 1,
+        "result" : "created",
+        "_shards" : {
+          "total" : 2,
+          "successful" : 1,
+          "failed" : 0
+        },
+        "_seq_no" : 7,
+        "_primary_term" : 1,
+        "status" : 201
+      }
+    },
+    {
+      "index" : {
+        "_index" : "customer",
+        "_type" : "external",
+        "_id" : "4",
+        "_version" : 1,
+        "result" : "created",
+        "_shards" : {
+          "total" : 2,
+          "successful" : 1,
+          "failed" : 0
+        },
+        "_seq_no" : 8,
+        "_primary_term" : 1,
+        "status" : 201
+      }
+    }
+  ]
+}
+```
+```
+POST /customer/external/_bulk?pretty
+{"update":{"_id":"3"}}
+{"doc": { "name": "John Doe becomes Jane Doe" } }
+{"delete":{"_id":"4"}}
+```
+返回信息：  
+```
+{
+  "took" : 63,
+  "errors" : false,
+  "items" : [
+    {
+      "update" : {
+        "_index" : "customer",
+        "_type" : "external",
+        "_id" : "3",
+        "_version" : 2,
+        "result" : "updated",
+        "_shards" : {
+          "total" : 2,
+          "successful" : 1,
+          "failed" : 0
+        },
+        "_seq_no" : 9,
+        "_primary_term" : 1,
+        "status" : 200
+      }
+    },
+    {
+      "delete" : {
+        "_index" : "customer",
+        "_type" : "external",
+        "_id" : "4",
+        "_version" : 2,
+        "result" : "deleted",
+        "_shards" : {
+          "total" : 2,
+          "successful" : 1,
+          "failed" : 0
+        },
+        "_seq_no" : 10,
+        "_primary_term" : 1,
+        "status" : 200
+      }
+    }
+  ]
+}
+```
+bulk API会按照顺序依次执行相关操作，如果其中某个操作发生错误，剩下的操作也会继续执行。当bulk API返回时它会提供每个操作的状态（顺序与你发送时的顺序一样），这样你就可以检查每个操作是否成功。  
+
+其他的api相关的操作请自行进入[文档操作API](https://www.elastic.co/guide/en/elasticsearch/reference/7.2/docs.html)去学习，进入到该API界面以后，右边的Elasticsearch Reference: 选择7.2的，
+其他的这里不做赘述了。    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
