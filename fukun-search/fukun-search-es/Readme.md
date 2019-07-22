@@ -101,8 +101,25 @@ http.cors.allow-origin: "*"
 ```
 再次重启ES，启动成功。   
 在浏览器中输入 http://192.168.0.43:9200/ 看一看外面浏览器能否成功访问，如下：  
-![搜索引擎](pictures/p11.png)   
-
+```
+{
+  "name" : "fukun_es_1",
+  "cluster_name" : "fukun_es",
+  "cluster_uuid" : "l_u3tVbfQnqkHiHLHhgb_g",
+  "version" : {
+    "number" : "7.2.0",
+    "build_flavor" : "default",
+    "build_type" : "tar",
+    "build_hash" : "508c38a",
+    "build_date" : "2019-06-20T15:54:18.811730Z",
+    "build_snapshot" : false,
+    "lucene_version" : "8.0.0",
+    "minimum_wire_compatibility_version" : "6.8.0",
+    "minimum_index_compatibility_version" : "6.0.0-beta1"
+  },
+  "tagline" : "You Know, for Search"
+}
+```
 出现如上的结果说明外面浏览器成功访问了43这台机器中的的es。 
  
 关闭 es，找到 es.pid 文件，我使用 ./elasticsearch -d -p es.pid 启动 es 后，es.pid 生成路径在解压后的 elasticsearch
@@ -142,6 +159,45 @@ ip         heap.percent ram.percent cpu load_1m load_5m load_15m node.role maste
 如果es启动的时候没有设置es节点名称，默认es节点名是localhost.localdomain，我们的节点叫做"fukun_es_1"，目前我们集群里唯一的一个节点。    
 
 
+
+
+# 与es集群进行沟通
+Elasticsearch提供了一个非常全面和强大的REST API，你可以通过它来与你的集群相互沟通。下面这些事情可以通过API来完成：  
+检查你的集群，节点和索引的健康情况，状态还可以统计。  
+管理你的集群，节点，索引和元数据。  
+对你的索引执行CRUD（增删改查）和检索操作。  
+执行高级检索操作例如分页，排序，过滤，脚本，聚合等等。  
+## 集群健康
+使用 curl -X GET http://192.168.0.43:9200/_cat/health?v 命令检查集群的健康状况。  
+返回的结果是：  
+```  
+epoch      timestamp cluster  status node.total node.data shards pri relo init unassign pending_tasks max_task_wait_time active_shards_percen
+t
+1563766131 03:28:51  fukun_es green           1         1      0   0    0    0        0             0                  -                100.0%
+```
+我们可以看到我们的集群叫做"fukun_es"，并且状态是绿色。  
+无论何时我们去请求集群的健康状态我们会得到：green, yellow, 或者 red。green意味着所有功能都是完好的，yellow意味着所有数据是可用的，
+但是一些副本还没有被分配，red代表一些数据由于某些原因已经不可用。
+注意，尽管一个集群是red状态，它仍然可以提供部分服务（比如，它会继续从可用的切片数据里搜索），但是在你失去部分数据后，你需要尽你最快的速度去修复它。  
+
+## 创建索引
+curl -X PUT http://192.168.0.43:9200/customer?pretty  
+通过PUT请求，我们创建了一个叫做"customer"的索引。pretty参数表示输出格式良好的JSON响应（如果存在）。     
+
+再次使用 curl -X GET http://192.168.0.43:9200/_cat/indices?v 获取索引列表，如下：  
+
+```
+health status index    uuid                   pri rep docs.count docs.deleted store.size pri.store.size
+yellow open   customer ezirYJS5TBWkmjihsLLo6g   1   1          0            0       230b           230b
+```
+我们这个"customer"索引有1个主切片和一份复制，它里面有0个document。  
+你可能也注意到了"customer"索引的健康状态是yellow。yellow意味着一些副本还没有被分配。原因是目前集群里只有一个节点，副本暂时不能被分配（为了高可用性），
+直到另一个节点加入到集群中后。一旦副本被分配到另一个节点后这个索引的状态也将变为green。    
+
+## 索引与查询文档
+让我们往"customer"索引里放点东西。记住，为了索引一个文档，我们必须告诉Elasticsearch这个文档的type。  
+让我们索引一个简单的customer文档到customer索引，external类型，ID是1：  
+
 # 安装 Kibana
 进入[Download Kibana](https://www.elastic.co/cn/downloads/kibana) 页面，下载对应版本的kibana，我这里下载7.2.0版本。  
 该页面有对应的安装步骤，如下：  
@@ -154,6 +210,34 @@ ip         heap.percent ram.percent cpu load_1m load_5m load_15m node.role maste
 ```
 执行以上命令，一定要切换到root用户去执行，如果之前安装es的时候，使用创建的es用户去执行上面命令会报443错误。  
 这个过程很慢，就看你所处网络的速度了。  
+解压 kibana-7.2.0-linux-x86_64.tar.gz 并重命名为 kibana，然后进入kibana/config目录，修改  kibana.yml 文件，
+修改kibana端口号，host和连接es的配置信息，如下：  
+```
+server.port: 5601    
+server.host: "192.168.0.43"  
+elasticsearch.hosts: ["http://192.168.0.43:9200"]  
+kibana.index: ".kibana"
+
+```
+然后进入bin目录，前台启动使用./kibana即可，
+后台启动使用 nohup ./kibana >> kibana.log 2>&1 &，如果出现如下的错误：  
+```
+Error: EACCES: permission denied, open '/home/tang/kibana/optimize/.babelcache.json'
+    at Object.openSync (fs.js:439:3)
+    at Object.writeFileSync (fs.js:1190:35)
+    at save (/home/tang/kibana/node_modules/@babel/register/lib/cache.js:52:15)
+    at process._tickCallback (internal/process/next_tick.js:61:11)
+    at Function.Module.runMain (internal/modules/cjs/loader.js:745:11)
+    at startup (internal/bootstrap/node.js:283:19)
+    at bootstrapNodeJSCore (internal/bootstrap/node.js:743:3)
+```
+要检查你启动kibana的用户是否有此文件夹的权限，进入/home/tang，在root用户下对es用户赋予权限，如下：  
+chown -R es:es kibana  
+然后切换到es用户模式，进入kibana的bin目录再次执行 nohup ./kibana >> kibana.log 2>&1 &，成功启动。   
+然后在浏览器的地址栏中输入 http://192.168.0.43:5601 进入到kibana的首页，如下：  
+ ![搜索引擎](pictures/p12.png)  
+ 
+
 
 
 
