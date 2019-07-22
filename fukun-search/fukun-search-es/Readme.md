@@ -174,9 +174,13 @@ chown -R es:es kibana
 ## Node 与 Cluster
 Elastic 本质上是一个分布式数据库，允许多台服务器协同工作，每台服务器可以运行多个 Elastic 实例。  
 单个 Elastic 实例称为一个节点（node）。一组节点构成一个集群（cluster）。  
-## Index
+## Index索引
+一个索引（index）一系列有类似特征的文档，
 Elastic 会索引所有字段，经过处理后写入一个反向索引（Inverted Index）。查找数据的时候，直接查找该索引。  
 所以，Elastic 数据管理的顶层单位就叫做 Index（索引）。它是单个数据库的同义词。**`每个 Index （即数据库）的名字必须是小写`**。  
+例如，你可以为用户数据建立个索引，为产品目录建立另一个索引，再为订单数据创建另一个索引。
+一个索引使用一个名字唯一标识（必须全部小写）,并且这个名字也被用来查阅索引，在执行添加索引，搜索，更新，和删除操作时防止有文档在里面。    
+在一个集群里你想定义多少个索引都可以。    
 下面的命令可以查看当前节点的所有 Index。  
 ```
 curl -X GET http://192.168.0.43:9200/_cat/indices?v
@@ -196,9 +200,45 @@ ip         heap.percent ram.percent cpu load_1m load_5m load_15m node.role maste
 
 ```
 如果es启动的时候没有设置es节点名称，默认es节点名是localhost.localdomain，我们的节点叫做"fukun_es_1"，目前我们集群里唯一的一个节点。    
+## 接近实时的
+Near Realtime，简称NRT。Elasticsearch 是一个接近实时的搜索平台。这意味着从你添加一个索引document到它可以被搜索将会有一个轻微的延迟（通常是1秒）。  
+## Document（文档）
+Index 里面单条的记录称为 Document（文档）。许多条 Document 构成了一个 Index。  
+一个文档(document)是你可以索引的基本信息单位。 
+例如，你可以有一个document储存一个单独的用户，另一个document储存单独的产品。这个document用JSON格式来表示。  
+在一个index/type里，你想存储多少个document都可以。注意尽管一个document物理上存在一个索引里，document实际上必须被indexed/assigned到索引里的一个类型。  
+Document 使用 JSON 格式表示，下面是一个例子。  
+```
+{
+  "user": "张三",
+  "title": "工程师",
+  "desc": "数据库管理"
+}
+```
+同一个 Index 里面的 Document，不要求有相同的结构（scheme），但是最好保持相同，这样有利于提高搜索效率。    
 
+## Type（类型）
+在一个索引里，你可以定义一个或多个类型。一个类型是逻辑上的分类/划分，它的语义完全取决于你。总得来说，一个类型是为有一些共同域的文档（document）定义的。    
+Document 可以分组，比如weather这个 Index 里面，可以按城市分组（北京和上海），也可以按气候分组（晴天和雨天）。这种分组就叫做 Type，它是虚拟的逻辑分组，用来过滤 Document。  
+不同的 Type 应该有相似的结构（schema），举例来说，id字段不能在这个组是字符串，在另一个组是数值。这是与关系型数据库的表的一个区别。性质完全不同的数据（比如products和logs）应该存成两个 Index，
+而不是一个 Index 里面的两个 Type（虽然可以做到）。  
 
+下面的命令可以列出每个 Index 所包含的 Type。  
+GET /_mapping?pretty    
+Elastic 6.x 版只允许每个 Index 包含一个 Type，7.x 版将会彻底移除 Type。  
 
+## 切片与副本
+一个索引可能存储大量的数据超出单台设备的存储上限。为了解决这个问题Elasticsearch支持把你的索引再分隔成多个切片叫做shards。当你创建一个索引时，你可以简单的定义你想要的切片数量。
+每一个切片在它内部都是一个功能完整和独立的"索引"，它可以被放置在集群里的任意一个节点。
+切片有两个重要的功能：  
+
+**它允许你水平切分你的内容体积  
+它允许你分发和并行操作**  
+
+一旦被切分，每个index都会有一些主切片和一些从切片（主切片的复制）。这些切片的数量可以在index被创建时一起定义。在索引被创建后，你可以在任何时候动态的改变从切片的数量，不能改变主切片的数量。    
+默认的Elasticsearch中的每个index被分配了5个主切片一份复制，这意味着你集群里有两个节点，你将拥有5个主切片和另外5个从切片（一个完整的复制）。每个index一共10个切片。  
+注意：  
+每个Elasticsearch切片是一个Lucene index，在一个独立的Lucene index里有一个最大document数：2,147,483,519 (= Integer.MAX_VALUE - 128)。你可以使用 _cat/shards api修改切片的容量。  
 
 # 与es集群进行沟通
 Elasticsearch提供了一个非常全面和强大的REST API，你可以通过它来与你的集群相互沟通。下面这些事情可以通过API来完成：  
