@@ -334,10 +334,43 @@ PUT /accounts
 }
 ```
 上面代码中，首先新建一个名称为accounts的 Index，里面有一个名称为person的 Type。person有三个字段user、title、desc。  
-这三个字段都是中文，而且类型都是文本（text），所以需要指定中文分词器，不能使用默认的英文分词器。  
+这三个字段都是中文，而且类型都是文本（text），**keyword适用于不分词字段，搜索时只能完全匹配**，所以需要指定中文分词器，不能使用默认的英文分词器。  
 对每个字段指定中文分词器。  
 analyzer是字段文本的分词器，search_analyzer是搜索词的分词器。ik_max_word分词器是插件ik提供的，可以对文本进行最大数量的分词。  
 
+#### 获取创建后的映射
+GET accounts/_mapping  
+返回如下：  
+![搜索引擎](pictures/p23.png)  
+
+#### 数据操作
+向指定的 /Index/Type 发送 PUT 请求，就可以在 Index 里面新增一条记录。比如，向/accounts/person发送请求，就可以新增一条人员记录。  
+```
+PUT /accounts/_doc/1
+{
+  "user": "张三",
+  "title": "工程师",
+  "desc": "数据库管理"
+}
+```
+服务器返回的 JSON 对象，会给出 Index、Type、Id、Version 等信息。  
+```
+{
+  "_index" : "accounts",
+  "_type" : "_doc",
+  "_id" : "1",
+  "_version" : 1,
+  "result" : "created",
+  "_shards" : {
+    "total" : 2,
+    "successful" : 1,
+    "failed" : 0
+  },
+  "_seq_no" : 0,
+  "_primary_term" : 1
+}
+```
+其他的es基本操作参考当前项目中的基本操作目录 baseoperate 中的基本es操作。  
 
 # 安装 Kibana
 进入[Download Kibana](https://www.elastic.co/cn/downloads/kibana) 页面，下载对应版本的kibana，我这里下载7.2.0版本。  
@@ -433,7 +466,7 @@ Document 可以分组，比如weather这个 Index 里面，可以按城市分组
 
 下面的命令可以列出每个 Index 所包含的 Type。  
 GET /_mapping?pretty    
-Elastic 6.x 版只允许每个 Index 包含一个 Type，7.x 版将会彻底移除 Type。  
+**Elastic 6.x 版只允许每个 Index 包含一个 Type，7.x 版将会彻底移除 Type。**  
 
 ## 切片与副本
 一个索引可能存储大量的数据超出单台设备的存储上限。为了解决这个问题Elasticsearch支持把你的索引再分隔成多个切片叫做shards。当你创建一个索引时，你可以简单的定义你想要的切片数量。
