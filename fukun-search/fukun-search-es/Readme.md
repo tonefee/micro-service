@@ -755,7 +755,9 @@ POST /customer/external/_bulk?pretty
 bulk API会按照顺序依次执行相关操作，如果其中某个操作发生错误，剩下的操作也会继续执行。当bulk API返回时它会提供每个操作的状态（顺序与你发送时的顺序一样），这样你就可以检查每个操作是否成功。  
 
 其他的api相关的操作请自行进入[文档操作API](https://www.elastic.co/guide/en/elasticsearch/reference/7.2/docs.html)去学习，进入到该API界面以后，右边的Elasticsearch Reference: 选择7.2的，
-其他的这里不做赘述了。    
+其他的这里不做赘述了。  
+
+es相关的中文文档，进入[ES官网](https://www.elastic.co/guide/index.html)往下拉，找到Docs in Your Native Tongue这个标题栏，点击[简体中文](https://www.elastic.co/guide/cn/index.html)即可。  
 
 
 
