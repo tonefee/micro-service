@@ -106,8 +106,16 @@ public class RabbitMqConfiguration {
     @Bean
     public Queue fanOutQueue() {
         Map<String, Object> args = new HashMap<>(2);
-        // 设置队列中的消息 10s 钟后过期
+        // 设置队列中的消息 10s 钟后过期，针对整个队列的消息，不是单个消息
         // args.put("x-message-ttl", 10000);
+
+        // 设置队列的过期时间，不是队列中的消息过期时间，达到过期时间，整个队列就被删除了
+        // queue 被自动删除前可以处于未使用状态的时间，。未使用的意思是 queue 上没有任何 consumer ，
+        // queue 没有被重新声明，并且在过期时间段内未调用过 basic.get 命令。
+        // 服务器会确保在过期时间到达后 queue 被删除，但是不保证删除的动作有多么的及时。
+        // 在服务器重启后，持久化的 queue 的超时时间将重新计算。
+//        args.put("x-expires", 1800000);
+
 //       x-dead-letter-exchange    声明  死信交换机
         args.put("x-dead-letter-exchange", RabbitMqConstants.DEAD_LETTER_EXCHANGE_NAME);
 //       x-dead-letter-routing-key    声明 死信路由键

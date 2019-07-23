@@ -191,8 +191,21 @@ public class CanalClient {
             redisHandler.set(MAX_TRY_COUNT_PREFIX_KEY + msgId, 0);
             Gson gson = new Gson();
             String json = gson.toJson(resultMap);
+            // RabbitMQ 允许你对 message 和 queue 设置 TTL 值
+            // 在RabbitMQ 3.0.0以后的版本中，TTL 设置可以具体到每一条 message 本身，对消息设置过期时间，expiration 字段以微秒为单位表示 TTL 值。
+            // 且与 x-message-ttl 具有相同的约束条件。因为 expiration 字段必须为字符串类型，broker 将只会接受以字符串形式表达的数字。
+            // 当同时指定了 queue 和 message 的 TTL 值，则两者中较小的那个才会起作用。
+            // 虽然 consumer 从来看不到过期的 message ，但是在过期 message 到达 queue 的头部时确实会被真正的丢弃（或者 dead-lettered ）。
+            // 当对每一个 queue 设置了 TTL 值时不会产生任何问题，因为过期的 message 总是会出现在 queue 的头部。
+            // 当对每一条 message 设置了 TTL 时，过期的 message 可能会排队于未过期 message 的后面，直到这些消息被 consume 到或者过期了。
+            // 在这种情况下，这些过期的 message 使用的资源将不会被释放，且会在 queue 统计信息中被计算进去（例如，queue 中存在的 message 的数量）。
+            // 对于队列的TTL属性设置，即设置x-message-ttl，一旦消息过期，就会从队列中抹去，队列中已过期的消息肯定在队列头部，RabbitMQ只要定期从队头开始扫描是否有过期消息即可
+            // 但是对于单个消息的ttl设置，即使消息过期，也不会马上从队列中抹去，因为每条消息是否过期是在即将投递到消费者之前判定的，
+            // 每条消息的过期时间不同，如果要删除所有过期消息，势必要扫描整个队列，
+            // 所以不如等到此消息即将被消费时再判定是否过期，如果过期，再进行删除。
+            // 下面针对单个消息设置过期时间为10000，即publish 了最多能在 queue 中存活 10 秒的 message，这条消息发送到相应的队列之后，如果10秒内没有被消费，则变为死信。
             org.springframework.amqp.core.Message message = MessageBuilder.withBody(json.getBytes()).setContentEncoding("UTF-8")
-                    .setContentType(MessageProperties.CONTENT_TYPE_JSON).setCorrelationId(msgId).build();
+                    .setExpiration("10000").setContentType(MessageProperties.CONTENT_TYPE_JSON).setCorrelationId(msgId).build();
             CorrelationData correlationData = new CorrelationData(msgId);
             try {
                 redisHandler.set(msgId, gson.fromJson(gson.toJson(message), Map.class));

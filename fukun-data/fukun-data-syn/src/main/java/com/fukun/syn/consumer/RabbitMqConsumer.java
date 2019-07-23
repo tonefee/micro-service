@@ -70,7 +70,7 @@ public class RabbitMqConsumer {
     @RabbitListener(queues = {RabbitMqConstants.DEAD_LETTER_QUEUE_NAME})
     public void redirect(Message message, Channel channel) throws IOException {
         if (log.isInfoEnabled()) {
-            log.info("dead message  10s 后 消费消息 {}", new String(message.getBody()));
+            log.info("死信消息：{}", new String(message.getBody()));
         }
         if (null != message) {
             // TODO 同步redis、mongo等
