@@ -1,6 +1,18 @@
 # 基本es操作
 下面的基本es操作都是基于ES的7.X版本且都是使用可视化界面kibana进行操作，点击kibana界面左边栏的Dev Tools，点击Console选项卡即可。  
-
+当Elasticsearch在前台运行，可以使用Ctrl-C快捷键终止，或者你可以调用shutdown API来关闭：  
+curl -X POST http://ip地址:9200/_shutdown    
+## 基础操作
+1、使用 GET /_count 获取集群中的文档数量，如下：  
+```
+GET /_count
+{
+    "query": {
+        "match_all": {}
+    }
+}
+```
+## 简单的CRUD操作和复杂的CRUD操作
 1、使用 GET / 获取es节点信息，包括es节点名、集群名、集群uuid、版本信息。  
 返回如下：  
 ```
