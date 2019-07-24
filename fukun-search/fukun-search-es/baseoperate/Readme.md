@@ -75,7 +75,7 @@ POST twitter/_doc/1
   "_primary_term" : 1
 }
 ```
-5、使用 GET twitter/_doc/1 获取添加的索引信息，返回信息如下：  
+5、使用 GET twitter/_doc/1 获取添加的文档信息，返回信息如下：  
 ```
 {
   "_index" : "twitter",
@@ -96,7 +96,7 @@ POST twitter/_doc/1
 ```
 上面的 _source 表示的是索引中的文档内容。   
 
-6、使用 PUT twitter/_doc/1 修改索引中的id为1的文档内容，如下： 
+6、使用 PUT twitter/_doc/1 修改索引中的id为1的文档内容，覆盖旧文档的内容，如下： 
 ``` 
 PUT twitter/_doc/1
 {
@@ -905,7 +905,7 @@ GET twitter/_search
   ]
 }    
 ```
-21、查询age大于等于30岁小于等于40岁的索引记录，并且按照年龄降序排序，如下： 
+21、使用区间过滤器查询age大于等于30岁小于等于40岁的索引记录，并且按照年龄降序排序，如下： 
 ``` 
 GET twitter/_search
 {

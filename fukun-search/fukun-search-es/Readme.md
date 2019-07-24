@@ -152,6 +152,153 @@ PUT /fukun/_doc/1
     "interests": [ "sports", "music" ]
 }
 ```
+我们通过HTTP方法GET来检索文档（GET /fukun/_doc/1），同样的，我们可以使用DELETE（DELETE /fukun/_doc/1）方法删除文档，
+使用HEAD（HEAD /fukun/_doc/1）方法检查某文档是否存在。如果想更新已存在的文档，我们只需再PUT一次。    
+使用 GET /fukun/_doc/1 获取结果时，响应内容的hits数组中包含了搜索的文档信息，默认情况下搜索会返回前10个结果，
+Elasticsearch提供丰富且灵活的查询语言叫做DSL查询(Query DSL),它允许你构建更加复杂、强大的查询，
+DSL(Domain Specific Language特定领域语言)以JSON请求体的形式出现，如下：  
+```
+GET /fukun/_search
+{
+  "query": {
+    "match": {
+      "last_name": "Tang"
+    }
+  }
+}
+```
+## 结果相关性评分
+针对以下的结果集进行说明，如下： 
+``` 
+ "hits": {
+      "total":      2,
+      "max_score":  0.16273327,
+      "hits": [
+         {
+            ...
+            "_score":         0.16273327, <1>
+            "_source": {
+               "first_name":  "John",
+               "last_name":   "Smith",
+               "age":         25,
+               "about":       "I love to go rock climbing",
+               "interests": [ "sports", "music" ]
+            }
+         },
+         {
+            ...
+            "_score":         0.016878016, <2>
+            "_source": {
+               "first_name":  "Jane",
+               "last_name":   "Smith",
+               "age":         32,
+               "about":       "I like to collect rock albums",
+               "interests": [ "music" ]
+            }
+         }
+      ]
+   }
+```
+如果我要查询所有喜欢“rock climbing”的员工，根据以上的结果，从about字段中搜索"rock climbing"，我们得到了两个匹配文档。  
+<1><2>处就代表结果相关性评分。
+默认情况下，Elasticsearch根据结果相关性评分来对结果集进行排序，所谓的「结果相关性评分」就是文档与查询条件的匹配程度。很显然，排名第一的John Smith的about字段明确的写到“rock climbing”。  
+但是为什么Jane Smith也会出现在结果里呢？原因是“rock”在她的abuot字段中被提及了。因为只有“rock”被提及而“climbing”没有，所以她的_score要低于John。  
+这个例子很好的解释了Elasticsearch如何在各种文本字段中进行全文搜索，并且返回相关性最大的结果集。相关性(relevance)的概念在Elasticsearch中非常重要，
+而这个概念在传统关系型数据库中是不可想象的，因为传统数据库对记录的查询只有匹配或者不匹配，没有相关性的概念。  
+
+## 短语搜索
+我们可以在字段中搜索单独的一个词，这挺好的，但是有时候你想要确切的匹配若干个单词或者短语(phrases)。例如我们想要查询同时包含"rock"和"climbing"（并且是相邻的）的员工记录。  
+```
+GET /fukun/_search
+{
+    "query" : {
+        "match_phrase" : {
+            "about" : "rock climbing"
+        }
+    }
+}
+```
+该查询返回 John Smith 的文档，Jane Smith 的文档并没有被搜索到。  
+
+## 聚合（aggregations）分析  
+它允许你在数据上生成复杂的分析统计。它很像SQL中的GROUP BY但是功能更强大。  
+下面按照年龄进行分组统计，如下：  
+```
+GET /fukun/_search
+{
+  "size": 0,
+  "aggs": {
+    "group_by_age": {
+      "terms": { "field": "age" }
+    }
+  }
+}
+```
+返回结果为：  
+```
+  "aggregations" : {
+    "group_by_age" : {
+      "doc_count_error_upper_bound" : 0,
+      "sum_other_doc_count" : 0,
+      "buckets" : [
+        {
+          "key" : 23,
+          "doc_count" : 1
+        },
+        {
+          "key" : 27,
+          "doc_count" : 1
+        }
+      ]
+    }
+  }
+```
+返回结果显示是年龄23岁的1个人，年龄27岁的是1个人。   
+### 分级汇总  
+统计每种成绩对应的平均年龄，如下：  
+```
+GET /fukun/_search
+{
+  "size": 0,
+  "aggs": {
+    "group_by_grade": {
+      "terms": { "field": "grade" },
+        "aggs" : {
+                "avg_age" : {
+                    "avg" : { "field" : "age" }
+                }
+            }
+    }
+  }
+}
+```
+返回结果如下：  
+```
+"aggregations" : {
+    "group_by_grade" : {
+      "doc_count_error_upper_bound" : 0,
+      "sum_other_doc_count" : 0,
+      "buckets" : [
+        {
+          "key" : 93,
+          "doc_count" : 1,
+          "avg_age" : {
+            "value" : 33.0
+          }
+        },
+        {
+          "key" : 99,
+          "doc_count" : 1,
+          "avg_age" : {
+            "value" : 37.0
+          }
+        }
+      ]
+    }
+  }
+ ```
+上面的结果显示按成绩分组并且计算出该组成绩对应的平均年龄。  
+
 # 安装 ElasticSearch 
 ElasticSearch 需要 Java 8 环境，所以安装 ElasticSearch 之前需要安装java环境。  
 进入 [ElasticSearch 中文官网](https://www.elastic.co/cn/products/elasticsearch) 下载对应版本的安装包。  
