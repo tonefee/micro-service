@@ -2,6 +2,7 @@ package com.fukun.es.consumer;
 
 import com.alibaba.otter.canal.protocol.CanalEntry;
 import com.fukun.commons.constants.RabbitMqConstants;
+import com.fukun.es.util.EsUtil;
 import com.fukun.syn.model.MessageEntry;
 import com.google.gson.Gson;
 import com.rabbitmq.client.Channel;
@@ -10,6 +11,7 @@ import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.Resource;
 import java.io.IOException;
 import java.util.Map;
 
@@ -27,6 +29,9 @@ import java.util.Map;
 public class RabbitMqConsumer {
 
     private static final String DELIMITER = ":";
+
+    @Resource
+    private EsUtil esUtil;
 
     @RabbitListener(queues = {RabbitMqConstants.FANOUT_QUEUE_NAME})
     public void handleObjectMessage(Message message, Channel channel) throws IOException {
@@ -63,7 +68,7 @@ public class RabbitMqConsumer {
      * @throws IOException the io exception  这里异常需要处理
      */
     @RabbitListener(queues = {RabbitMqConstants.DEAD_LETTER_QUEUE_NAME})
-    public void redirect(Message message, Channel channel) throws IOException {
+    public void redirect(Message message, Channel channel) throws Exception {
         if (log.isInfoEnabled()) {
             log.info("dead message  10s 后 消费消息 {}", new String(message.getBody()));
         }
@@ -81,24 +86,28 @@ public class RabbitMqConsumer {
     }
 
     /**
-     * 同步到es中
+     * 同步到es中,7.x版本的es已经不存在type了,type就相当于数据库中相关的表名.
+     * 当数据库的数据同步到es时,确保之前的数据库中的记录的主键的唯一性,相同数据库中
+     * 不同的表的记录的主键不能有相同的,否则当在同一个库,行记录主键相同,
+     * 在es中就会存在索引覆盖问题.
      *
      * @param messageEntry binlog消息事件实体
      */
-    private void synToElasticSearch(MessageEntry messageEntry) {
+    private void synToElasticSearch(MessageEntry messageEntry) throws Exception {
         CanalEntry.EventType eventType = messageEntry.getEventType();
         String dataBase = messageEntry.getSchemaName();
-        String tableName = messageEntry.getTableName();
-        StringBuilder sb = new StringBuilder(1 << 2);
-        sb.append(dataBase).append(DELIMITER).append(tableName).append(DELIMITER);
         Map<String, Object> map = messageEntry.getAfter();
         String id = String.valueOf(map.get("id"));
-        sb.append(id);
-        // TODO 同步es中的相关逻辑
-        String key = sb.toString();
+        String result = null;
         if (CanalEntry.EventType.DELETE == eventType) {
+            result = esUtil.deleteDocument(dataBase, id);
         } else if (CanalEntry.EventType.INSERT == eventType) {
+            result = esUtil.addDocument(dataBase, id, map);
         } else if (CanalEntry.EventType.UPDATE == eventType) {
+            result = esUtil.updateDocument(dataBase, id, map);
+        }
+        if (log.isInfoEnabled()) {
+            log.info("执行es的操作结果：{}", result);
         }
 
     }

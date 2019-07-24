@@ -26,3 +26,9 @@ spring:
 
 server:
  port: 8008
+
+es:
+  host: 192.168.0.43
+  port: 9200
+  protocol: http
+
