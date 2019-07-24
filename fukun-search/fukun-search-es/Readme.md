@@ -1057,6 +1057,7 @@ bulk API会按照顺序依次执行相关操作，如果其中某个操作发生
 
 es相关的中文文档，进入[ES官网](https://www.elastic.co/guide/index.html)往下拉，找到Docs in Your Native Tongue这个标题栏，点击[简体中文](https://www.elastic.co/guide/cn/index.html)即可。  
 [es权威指南中文版](https://es.xiaoleilu.com/)
+[JAVA API](https://www.elastic.co/guide/en/elasticsearch/client/java-api/current/index.html)
 
 
 
