@@ -140,8 +140,18 @@ PUT /fukun/employee/1
 fukun	索引名  
 employee	类型名  
 1	这个员工的ID  
-请求实体（JSON文档），包含了这个员工的所有信息。他的名字叫“John Smith”，25岁，喜欢攀岩。    
-
+请求实体（JSON文档），包含了这个员工的所有信息。他的名字叫“John Smith”，25岁，喜欢攀岩。   
+如果你的es版本是7.X的，由于 Elasticsearch 7.X版本 删除type，那么请使用如下的操作添加员工：  
+```
+PUT /fukun/_doc/1
+{
+    "first_name" : "John",
+    "last_name" :  "Smith",
+    "age" :        25,
+    "about" :      "I love to go rock climbing",
+    "interests": [ "sports", "music" ]
+}
+```
 # 安装 ElasticSearch 
 ElasticSearch 需要 Java 8 环境，所以安装 ElasticSearch 之前需要安装java环境。  
 进入 [ElasticSearch 中文官网](https://www.elastic.co/cn/products/elasticsearch) 下载对应版本的安装包。  
