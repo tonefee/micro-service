@@ -299,6 +299,8 @@ GET /fukun/_search
  ```
 上面的结果显示按成绩分组并且计算出该组成绩对应的平均年龄。  
 
+注意：删除一个文档也不会立即从磁盘上移除，它只是被标记成已删除。Elasticsearch将会在你之后添加更多索引的时候才会在后台进行删除内容的清理。  
+
 # 安装 ElasticSearch 
 ElasticSearch 需要 Java 8 环境，所以安装 ElasticSearch 之前需要安装java环境。  
 进入 [ElasticSearch 中文官网](https://www.elastic.co/cn/products/elasticsearch) 下载对应版本的安装包。  
