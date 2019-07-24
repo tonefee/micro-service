@@ -926,7 +926,7 @@ GET twitter/_search
   ]
 }
 ```
-22、查询message包含 happy birthday 的索引记录，如下：     
+22、es的短语搜索，查询message包含 happy birthday 的索引记录，如下：     
 ```
 GET twitter/_search
 {

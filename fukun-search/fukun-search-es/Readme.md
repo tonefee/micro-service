@@ -100,6 +100,47 @@ POS：单词在文档中出现的位置；
 全文搜索属于最常见的需求，开源的 Elasticsearch （以下简称 Elastic）是目前全文搜索引擎的首选。  
 它可以快速地储存、搜索和分析海量数据。维基百科、Stack Overflow、Github 都采用它。  
 ElasticSearch 的底层是开源库 Lucene。但是，你没法直接用 Lucene，必须自己写代码去调用它的接口。Elastic 是 Lucene 的封装，提供了 REST API 的操作接口，开箱即用。     
+Elasticsearch 是面向文档(document oriented)的，这意味着它可以存储整个对象或文档(document)。  
+然而它不仅仅是存储，还会索引(index)每个文档的内容使之可以被搜索。在Elasticsearch中，你可以对文档（而非成行成列的数据）进行索引、搜索、排序、过滤。      
+我么可以通过es将不同的对象转化为json，并作索引，就是说将对象转化json并以文档的方式在es中生成倒排索引，这样查询某个单词的时候，
+就能快速的搜索到包含该单词的文档列表。 
+下面举一个例子：  
+比如索引员工文档，员工文档就是存储某个公司中的所有员工的数据文档，每个文档代表一个员工，听起来就像是数据库中的员工表的相关行记录，
+在Elasticsearch中存储数据的行为就叫做索引，不过在索引之前，我们需要明确数据应该存储在哪里。  
+在Elasticsearch中，文档归属于一种类型(type),而这些类型存在于索引(index)中， 我们可以画一些简单的对比图来类比传统关系型数据库：  
+
+**Relational DB -> Databases -> Tables -> Rows -> Columns  
+Elasticsearch -> Indices   -> Types  -> Documents -> Fields**  
+
+Elasticsearch集群可以包含多个索引(indices)（数据库），每一个索引可以包含多个类型(types)（表），
+每一个类型包含多个文档(documents)（行），然后每个文档包含多个字段(Fields)（列）。  
+「索引」含义的区分  
+索引（名词） ：一个索引(index)就像是传统关系数据库中的数据库，它是相关文档存储的地方，index的复数是indices 或indexes。  
+索引（动词） ：「索引一个文档」表示把一个文档存储到索引（名词）里，以便它可以被检索或者查询。这很像SQL中的INSERT关键字，差别是，如果文档已经存在，新的文档将覆盖旧的文档。   
+倒排索引 传统数据库为特定列增加一个索引，例如B-Tree索引来加速检索。Elasticsearch和Lucene使用一种叫做倒排索引(inverted index)的数据结构来达到相同目的。    
+默认情况下，文档中的所有字段都会被索引（拥有一个倒排索引），只有这样他们才是可被搜索的。  
+所以为了创建员工目录，我们将进行如下操作：  
+为每个员工的文档(document)建立索引，每个文档包含了相应员工的所有信息。  
+每个文档的类型为employee。  
+employee类型归属于索引 fukun。  
+fukun 索引存储在Elasticsearch集群中。  
+实际上这些都是很容易的（尽管看起来有许多步骤）。我们能通过一个命令执行完成的操作：  
+
+```
+PUT /fukun/employee/1
+{
+    "first_name" : "John",
+    "last_name" :  "Smith",
+    "age" :        25,
+    "about" :      "I love to go rock climbing",
+    "interests": [ "sports", "music" ]
+}
+```
+我们看到path:/fukun/employee/1包含三部分信息：  
+fukun	索引名  
+employee	类型名  
+1	这个员工的ID  
+请求实体（JSON文档），包含了这个员工的所有信息。他的名字叫“John Smith”，25岁，喜欢攀岩。    
 
 # 安装 ElasticSearch 
 ElasticSearch 需要 Java 8 环境，所以安装 ElasticSearch 之前需要安装java环境。  
