@@ -950,7 +950,7 @@ DELETE /customer/external/2?pretty
 这里介绍了根据特定条件删除所有的文档。值得注意的是通过Delete By Query API删除所有的索引比删除所有文档要困难的多。  
 
 ### 批处理
-除了上面介绍的对单一文档进行操作外，Elasticsearch也提供了批量处理的能力，通过使用_bulkAPI。这个功能是很重要的，它提供了不同的机制来做多个操作，减少了与服务器直接来回传递数据的次数。  
+除了上面介绍的对单一文档进行操作外，Elasticsearch也提供了批量处理的能力，通过使用_bulk API。这个功能是很重要的，它提供了不同的机制来做多个操作，减少了与服务器直接来回传递数据的次数。  
 ```
 POST /customer/external/_bulk?pretty
 {"index":{"_id":"3"}}
@@ -1053,9 +1053,157 @@ POST /customer/external/_bulk?pretty
 bulk API会按照顺序依次执行相关操作，如果其中某个操作发生错误，剩下的操作也会继续执行。当bulk API返回时它会提供每个操作的状态（顺序与你发送时的顺序一样），这样你就可以检查每个操作是否成功。  
 
 # 使用 JAVA API 操作es
-## TransportClient
-TransportClient是操作Elasticsearch集群的客户端API，它通过异步方式和ES集群进行交互。  
 
+## RestHighLevelClient
+针对 ES 7.X 或者以上的版本，[es官网的Transport Client](https://www.elastic.co/guide/en/elasticsearch/client/java-api/current/transport-client.html#transport-client)会有下面的一句话，如下：  
+
+Deprecated in 7.0.0.  
+The TransportClient is deprecated in favour of the Java High Level REST Client   
+and will be removed in Elasticsearch 8.0. The migration guide describes all the   
+steps needed to migrate.  
+
+上面就是说在ES7.X相关的版本中，TransportClient里面有很多API都过时了，请使用Java高级别REST客户端操作es。  
+但是内部仍然是基于低级客户端，它提供了更多的API，接受请求对象作为参数并返回响应对象。  
+由客户端自己处理编码和解码。  
+每个API都可以同步或异步调用。 同步方法返回一个响应对象，而异步方法的名称以async后缀结尾，需要一个监听器参数，一旦收到响应或错误，就会被通知（由低级客户端管理的线程池）。    
+高级客户端依赖于Elasticsearch core项目。 它接受与TransportClient相同的请求参数并返回相同的响应对象。  
+高级客户端需要Java 1.8并依赖于Elasticsearch core项目。**`客户端版本需要与Elasticsearch版本相同`**。它与TransportClient请求的参数和返回响应对象相同。  
+如果您需要将应用程序从TransportClient迁移到新的REST客户端，请参阅[迁移指南](https://www.elastic.co/guide/en/elasticsearch/client/java-rest/current/java-rest-high-level-migration.html)。  
+要能够与Elasticsearch进行通信，主版本号需要一致，次版本号不必相同，因为它是向前兼容的。次版本号小于等于elasticsearch的都可以。这意味着它支持与更高版本的Elasticsearch进行通信。  
+6.0客户端能够与任何6.x Elasticsearch节点通信，而6.1客户端肯定能够与6.1,6.2和任何后来的6.x版本进行通信，但与旧版本的Elasticsearch节点通信时可能会存在不兼容的问题，例如6.1和6.0之间，可能6.1客户端支持elasticsearch 6.0还没出来的API。  
+
+RestHighLevelClient 是操作Elasticsearch集群的高级客户端API，RestHighLevelClient实例需要低级客户端构建器来构建，如 EsConfig 类中的代码：  
+
+```
+@Bean("client")
+    public RestHighLevelClient getTransportClient() {
+        RestHighLevelClient client = new RestHighLevelClient(
+                RestClient.builder(
+                        new HttpHost(host, port, http)
+                        //这里如果要用client去访问其他节点，就添加进去
+                        //new HttpHost("localhost", 9200, http)
+                )
+        );
+        return client;
+    }
+```
+高级客户端将在内部创建低级客户端，用来执行基于提供的构建器的请求，并管理其生命周期。  
+当不再需要时，需要关闭高级客户端实例，以便它所使用的所有资源以及底层的http客户端实例及其线程得到正确释放。可以通过close方法来完成，该方法将关闭内部的RestClient实例。  
+client.close();  
+
+## 支持的 API
+相关的 API 操作请参考 EsUtil 类中的代码。  
+
+在查询操作时，如果在聚合、排序时报如下的错误： 
+
+``` 
+Fielddata is disabled on text fields by default. 
+Set fielddata=true on [your_field_name] in order to load 
+fielddata in memory by uninverting the inverted index. 
+Note that this can however use significant memory.
+```
+这个错误表示针对文本字段，fielddata 默认是禁用的，在进行聚合、排序等操作时，会使用 fielddata 这种数据结构，但是 fielddata 非常耗内存，一般不建议开启它。  
+具体请看[fielddata](https://www.elastic.co/guide/en/elasticsearch/reference/current/fielddata.html#before-enabling-fielddata)，里面有相关的解决办法，
+我的解决办法就是开启fielddata（我这里主要针对user_status字段进行降序排序），如下：   
+``` 
+PUT fukun_order/_mapping
+{
+  "properties": {
+    "user_status":{
+      "type":"text",
+      "fielddata": true,
+      "fields": {
+        "keyword":{
+          "type":"keyword"
+        }
+      }
+    }
+  }
+}
+```
+然后执行查询，查询地址包含南的所有文档，并且按照user_status进行降序排序。    
+我这里主要针对fukun_order数据库中的t_user表中的数据同步到es，
+t_user表的记录如下： 
+![搜索引擎](pictures/p32.png)  
+当这个表中的记录有任何变化都会同步到es，具体请查看该项目的代码实现。  
+然后通过 kibana 查看数据库同步到es中的数据，如下：  
+```
+GET /fukun_order/_search
+{
+ "query": {
+   "match_all": {
+   }
+ }
+}
+```
+部分返回结果：  
+```
+      {
+        "_index" : "fukun_order",
+        "_type" : "_doc",
+        "_id" : "111",
+        "_score" : 1.0,
+        "_source" : {
+          "user_status" : "2",
+          "address" : "南京",
+          "create_time" : "2019-07-25 11:02:36",
+          "phone" : "13167695369",
+          "modify_time" : "2019-07-25 11:07:36",
+          "name" : "张三",
+          "id" : "111",
+          "email" : "13167695369@163.com"
+        }
+      },
+      {
+        "_index" : "fukun_order",
+        "_type" : "_doc",
+        "_id" : "222",
+        "_score" : 1.0,
+        "_source" : {
+          "user_status" : "3",
+          "address" : "海南",
+          "create_time" : "2019-07-25 12:02:36",
+          "phone" : "15062230055",
+          "modify_time" : "2019-07-25 12:07:36",
+          "name" : "李四",
+          "id" : "222",
+          "email" : "15062230055@163.com"
+        }
+      },
+      {
+        "_index" : "fukun_order",
+        "_type" : "_doc",
+        "_id" : "333",
+        "_score" : 1.0,
+        "_source" : {
+          "user_status" : "4",
+          "address" : "南宁",
+          "create_time" : "2019-07-25 13:02:36",
+          "phone" : "13256897458",
+          "modify_time" : "2019-07-25 13:07:36",
+          "name" : "王五",
+          "id" : "333",
+          "email" : "13256897458@163.com"
+        }
+      }
+```
+下面我们通过swagger进行以上的复合条件查询，如下：  
+![搜索引擎](pictures/p33.png)  
+查询参数：  
+```
+{
+  "index": "fukun_order",
+  "page": 0,
+  "pageSize": 10,
+ "queryMap": {
+   "address":"南"
+   },
+  "sort": "user_status"
+}
+```
+查询结果如下：  
+![搜索引擎](pictures/p34.png) 
+通过查询结果可以看出是按照user_status进行降序排列，并且查询出了address包含南的所有文档。    
 
 其他的api相关的操作请自行进入[文档操作API](https://www.elastic.co/guide/en/elasticsearch/reference/7.2/docs.html)去学习，进入到该API界面以后，右边的Elasticsearch Reference: 选择7.2的，
 其他的这里不做赘述了。  
