@@ -1,5 +1,6 @@
 package com.fukun.es.util;
 
+import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.delete.DeleteResponse;
 import org.elasticsearch.action.index.IndexRequest;
@@ -21,6 +22,7 @@ import java.util.Map;
  * @date 2019年7月24日17:26:26
  */
 @Component
+@Slf4j
 public class EsUtil {
 
     @Resource
@@ -78,4 +80,5 @@ public class EsUtil {
         request.doc(map);
         return client.update(request, RequestOptions.DEFAULT).toString();
     }
+
 }

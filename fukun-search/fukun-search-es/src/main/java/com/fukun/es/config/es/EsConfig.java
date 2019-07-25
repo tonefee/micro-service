@@ -1,4 +1,4 @@
-package com.fukun.es.config;
+package com.fukun.es.config.es;
 
 import lombok.Setter;
 import org.apache.http.HttpHost;
