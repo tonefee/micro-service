@@ -126,7 +126,7 @@ public class EsUtil {
             public void onResponse(UpdateResponse updateResponse) {
                 //如果执行成功，则调用onResponse方法;
                 if (log.isInfoEnabled()) {
-                    log.info("删除成功的结果：{}", updateResponse.toString());
+                    log.info("更新成功的结果：{}", updateResponse.toString());
                 }
             }
 
@@ -134,7 +134,7 @@ public class EsUtil {
             public void onFailure(Exception e) {
                 //如果执行失败，则调用 onFailure 方法;
                 if (log.isInfoEnabled()) {
-                    log.error("删除失败的相关异常：{}", e);
+                    log.error("更新失败的相关异常：{}", e);
                 }
             }
         };
