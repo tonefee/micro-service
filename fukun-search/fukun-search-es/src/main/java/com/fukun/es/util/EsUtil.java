@@ -1,11 +1,13 @@
 package com.fukun.es.util;
 
 import lombok.extern.slf4j.Slf4j;
+import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.delete.DeleteResponse;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.update.UpdateRequest;
+import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.xcontent.XContentBuilder;
@@ -37,7 +39,7 @@ public class EsUtil {
      * @return 响应
      * @throws Exception 异常
      */
-    public String addDocument(String index, String id, Map<String, Object> map) throws Exception {
+    public void addDocument(String index, String id, Map<String, Object> map) throws Exception {
         XContentBuilder builder = XContentFactory.jsonBuilder().startObject();
         String key;
         Object value;
@@ -49,8 +51,29 @@ public class EsUtil {
         builder.endObject();
         IndexRequest request = new IndexRequest(index);
         request.id(id).opType("create").source(builder);
-        IndexResponse response = client.index(request, RequestOptions.DEFAULT);
-        return response.toString();
+        // 异步方法不会阻塞并立即返回
+        ActionListener<IndexResponse> addListener = new ActionListener<IndexResponse>() {
+            @Override
+            public void onResponse(IndexResponse indexResponse) {
+                //如果执行成功，则调用onResponse方法;
+                if (log.isInfoEnabled()) {
+                    log.info("添加成功的结果：{}", indexResponse.toString());
+                }
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                //如果执行失败，则调用 onFailure 方法;
+                if (log.isInfoEnabled()) {
+                    log.error("添加失败的相关异常：{}", e);
+                }
+            }
+        };
+        // 下面是同步操作
+        // IndexResponse response = client.index(request, RequestOptions.DEFAULT);
+        // return response.toString();
+        // 下面是异步操作
+        client.indexAsync(request, RequestOptions.DEFAULT, addListener);
     }
 
     /**
@@ -61,10 +84,30 @@ public class EsUtil {
      * @return 响应
      * @throws Exception 异常
      */
-    public String deleteDocument(String index, String id) throws Exception {
+    public void deleteDocument(String index, String id) {
         DeleteRequest request = new DeleteRequest(index, id);
-        DeleteResponse response = client.delete(request, RequestOptions.DEFAULT);
-        return response.toString();
+        ActionListener<DeleteResponse> deleteListener = new ActionListener<DeleteResponse>() {
+            @Override
+            public void onResponse(DeleteResponse deleteResponse) {
+                //如果执行成功，则调用onResponse方法;
+                if (log.isInfoEnabled()) {
+                    log.info("删除成功的结果：{}", deleteResponse.toString());
+                }
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                //如果执行失败，则调用 onFailure 方法;
+                if (log.isInfoEnabled()) {
+                    log.error("删除失败的相关异常：{}", e);
+                }
+            }
+        };
+        // 同步操作
+        // DeleteResponse response = client.delete(request, RequestOptions.DEFAULT);
+        // return response.toString();
+        // 异步操作
+        client.deleteAsync(request, RequestOptions.DEFAULT, deleteListener);
     }
 
     /**
@@ -75,10 +118,27 @@ public class EsUtil {
      * @return 响应
      * @throws Exception 异常
      */
-    public String updateDocument(String index, String id, Map<String, Object> map) throws Exception {
+    public void updateDocument(String index, String id, Map<String, Object> map) {
         UpdateRequest request = new UpdateRequest(index, id);
         request.doc(map);
-        return client.update(request, RequestOptions.DEFAULT).toString();
+        ActionListener<UpdateResponse> updateListener = new ActionListener<UpdateResponse>() {
+            @Override
+            public void onResponse(UpdateResponse updateResponse) {
+                //如果执行成功，则调用onResponse方法;
+                if (log.isInfoEnabled()) {
+                    log.info("删除成功的结果：{}", updateResponse.toString());
+                }
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                //如果执行失败，则调用 onFailure 方法;
+                if (log.isInfoEnabled()) {
+                    log.error("删除失败的相关异常：{}", e);
+                }
+            }
+        };
+        client.updateAsync(request, RequestOptions.DEFAULT, updateListener);
     }
 
 }

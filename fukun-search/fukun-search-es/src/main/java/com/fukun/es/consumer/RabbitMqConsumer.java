@@ -98,18 +98,13 @@ public class RabbitMqConsumer {
         String dataBase = messageEntry.getSchemaName();
         Map<String, Object> map = messageEntry.getAfter();
         String id = String.valueOf(map.get("id"));
-        String result = null;
         if (CanalEntry.EventType.DELETE == eventType) {
-            result = esUtil.deleteDocument(dataBase, id);
+            esUtil.deleteDocument(dataBase, id);
         } else if (CanalEntry.EventType.INSERT == eventType) {
-            result = esUtil.addDocument(dataBase, id, map);
+            esUtil.addDocument(dataBase, id, map);
         } else if (CanalEntry.EventType.UPDATE == eventType) {
-            result = esUtil.updateDocument(dataBase, id, map);
+            esUtil.updateDocument(dataBase, id, map);
         }
-        if (log.isInfoEnabled()) {
-            log.info("执行es的操作结果：{}", result);
-        }
-
     }
 
 }
