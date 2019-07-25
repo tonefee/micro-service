@@ -1202,7 +1202,7 @@ GET /fukun_order/_search
 }
 ```
 查询结果如下：  
-![搜索引擎](pictures/p34.png) 
+![搜索引擎](pictures/p34.png)   
 通过查询结果可以看出是按照user_status进行降序排列，并且查询出了address包含南的所有文档。    
 
 其他的api相关的操作请自行进入[文档操作API](https://www.elastic.co/guide/en/elasticsearch/reference/7.2/docs.html)去学习，进入到该API界面以后，右边的Elasticsearch Reference: 选择7.2的，
