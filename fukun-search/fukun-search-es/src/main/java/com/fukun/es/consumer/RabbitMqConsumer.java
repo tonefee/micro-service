@@ -43,7 +43,6 @@ public class RabbitMqConsumer {
                 log.info("消费者处理消息成功，消息是：{}", new String(message.getBody()));
             }
             if (null != message) {
-                // TODO 同步到es
                 MessageEntry messageEntry = new Gson().fromJson(new String(message.getBody()), MessageEntry.class);
                 synToElasticSearch(messageEntry);
             }
@@ -73,7 +72,6 @@ public class RabbitMqConsumer {
             log.info("dead message  10s 后 消费消息 {}", new String(message.getBody()));
         }
         if (null != message) {
-            // TODO 同步redis、mongo等
             MessageEntry messageEntry = new Gson().fromJson(new String(message.getBody()), MessageEntry.class);
             synToElasticSearch(messageEntry);
         }

@@ -6,10 +6,7 @@ import com.fukun.es.query.EsQuery;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import java.util.List;
@@ -35,6 +32,24 @@ public class EsController {
     @PostMapping("/_query")
     public List<Map<String, Object>> queryDocumentByQueryCondition(@RequestBody EsQuery esQuery) throws Exception {
         return esManager.queryDocumentByAndCondition(esQuery);
+    }
+
+    @ApiOperation(value = "批量添加文档", httpMethod = "POST", notes = "批量添加文档")
+    @PostMapping("/{index}/_madd")
+    public void addBatchDocument(@PathVariable String index, @RequestBody List<Map<String, Object>> list) {
+        esManager.addBatchDocument(index, list);
+    }
+
+    @ApiOperation(value = "批量删除文档", httpMethod = "DELETE", notes = "批量删除文档")
+    @DeleteMapping("/{index}/_mdelete")
+    public void delBatchDocument(@PathVariable String index, @RequestBody List<String> list) {
+        esManager.delBatchDocument(index, list);
+    }
+
+    @ApiOperation(value = "批量更新文档", httpMethod = "PUT", notes = "批量更新文档")
+    @PutMapping("/{index}/_mupdate")
+    public void updateBatchDocument(@PathVariable String index, @RequestBody List<Map<String, Object>> list) {
+        esManager.updateBatchDocument(index, list);
     }
 
 }
