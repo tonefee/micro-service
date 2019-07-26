@@ -41,7 +41,7 @@ es:
   # 获取连接的超时时间
   connectionRequestTimeOut: 500
   # 最大连接数
-  maxConnectNum: 100
+  maxConnectNum: 30
   # 最大路由连接数
-  maxConnectPerRoute: 100
+  maxConnectPerRoute: 10
 
