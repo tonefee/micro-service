@@ -1,5 +1,8 @@
 package com.fukun.es.util;
 
+import com.fukun.commons.exceptions.DataConflictException;
+import com.fukun.commons.exceptions.DataNotFoundException;
+import com.fukun.commons.exceptions.ParameterInvalidException;
 import com.fukun.commons.util.CollectionUtil;
 import com.fukun.commons.util.StringUtil;
 import com.fukun.es.constant.Constants;
@@ -9,14 +12,17 @@ import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.delete.DeleteResponse;
+import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
+import org.elasticsearch.search.fetch.subphase.FetchSourceContext;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
@@ -47,12 +53,12 @@ public class EsUtil {
      * @param index 索引名称
      * @param list  文档列表
      */
-    public void addBatchDocument(String index, List<Map<String, Object>> list) {
+    public int addBatchDocument(String index, List<Map<String, Object>> list) {
         if (StringUtil.isEmpty(index)) {
             if (log.isInfoEnabled()) {
                 log.info("索引不能为空");
             }
-            return;
+            throw new ParameterInvalidException("Index can not null!");
         }
         if (CollectionUtil.isNotEmpty(list)) {
             la.reset();
@@ -107,6 +113,7 @@ public class EsUtil {
             // 异步操作
             client.bulkAsync(bulkRequest, RequestOptions.DEFAULT, addBatchListener);
         }
+        return la.intValue();
     }
 
     /**
@@ -115,12 +122,12 @@ public class EsUtil {
      * @param index 索引名称
      * @param list  文档列表
      */
-    public void updateBatchDocument(String index, List<Map<String, Object>> list) {
+    public int updateBatchDocument(String index, List<Map<String, Object>> list) {
         if (StringUtil.isEmpty(index)) {
             if (log.isInfoEnabled()) {
                 log.info("索引不能为空");
             }
-            return;
+            throw new ParameterInvalidException("Index can not null!");
         }
         if (CollectionUtil.isNotEmpty(list)) {
             la.reset();
@@ -175,6 +182,7 @@ public class EsUtil {
             // 异步操作
             client.bulkAsync(bulkRequest, RequestOptions.DEFAULT, updateBatchListener);
         }
+        return la.intValue();
     }
 
     /**
@@ -183,12 +191,12 @@ public class EsUtil {
      * @param index 索引名称
      * @param list  文档id列表
      */
-    public void delBatchDocument(String index, List<String> list) {
+    public int delBatchDocument(String index, List<String> list) {
         if (StringUtil.isEmpty(index)) {
             if (log.isInfoEnabled()) {
                 log.info("索引不能为空");
             }
-            return;
+            throw new ParameterInvalidException("Index can not null!");
         }
         if (CollectionUtil.isNotEmpty(list)) {
             la.reset();
@@ -233,6 +241,7 @@ public class EsUtil {
             // 异步操作
             client.bulkAsync(bulkRequest, RequestOptions.DEFAULT, deleteBatchListener);
         }
+        return la.intValue();
     }
 
     /**
@@ -244,13 +253,18 @@ public class EsUtil {
      * @return 响应
      * @throws Exception 异常
      */
-    public void addDocument(String index, String id, Map<String, Object> map) throws Exception {
+    public String addDocument(String index, String id, Map<String, Object> map) throws Exception {
         if (StringUtil.isEmpty(index)) {
             if (log.isInfoEnabled()) {
                 log.info("索引不能为空");
             }
-            return;
+            throw new ParameterInvalidException("Index can not null!");
         }
+        // 如果在同一个索引下存在某一条文档记录，就不添加了
+        if (existsDoc(index, id)) {
+            throw new DataConflictException("Documents already exist under this index!");
+        }
+        // 如果索引不存在或者索引存在但是索引对应的某个文档不存在，添加新文档记录
         XContentBuilder builder = XContentFactory.jsonBuilder().startObject();
         String key;
         Object value;
@@ -285,6 +299,7 @@ public class EsUtil {
         // 下面是异步操作
         request.id(id).opType("create").source(builder);
         client.indexAsync(request, RequestOptions.DEFAULT, addListener);
+        return "Created";
     }
 
     /**
@@ -295,12 +310,16 @@ public class EsUtil {
      * @return 响应
      * @throws Exception 异常
      */
-    public void deleteDocument(String index, String id) {
+    public String deleteDocument(String index, String id) throws Exception {
         if (StringUtil.isEmpty(index)) {
             if (log.isInfoEnabled()) {
                 log.info("索引不能为空");
             }
-            return;
+            throw new ParameterInvalidException("Index can not null!");
+        }
+        // 索引不存在直接返回或者索引中的某一个文档记录不存在直接返回
+        if (!existsDoc(index, id)) {
+            throw new DataNotFoundException("Index do not exist or Documents do not exist under this index!");
         }
         ActionListener<DeleteResponse> deleteListener = new ActionListener<DeleteResponse>() {
             @Override
@@ -325,6 +344,7 @@ public class EsUtil {
         // return response.toString();
         // 异步操作
         client.deleteAsync(request, RequestOptions.DEFAULT, deleteListener);
+        return "Deleted";
     }
 
     /**
@@ -335,12 +355,16 @@ public class EsUtil {
      * @return 响应
      * @throws Exception 异常
      */
-    public void updateDocument(String index, String id, Map<String, Object> map) {
+    public String updateDocument(String index, String id, Map<String, Object> map) throws Exception {
         if (StringUtil.isEmpty(index)) {
             if (log.isInfoEnabled()) {
                 log.info("索引不能为空");
             }
-            return;
+            throw new ParameterInvalidException("Index can not null!");
+        }
+        // 索引不存在直接返回或者索引中的某一个文档记录不存在直接返回
+        if (!existsDoc(index, id)) {
+            throw new DataNotFoundException("Index do not exist or Documents do not exist under this index!");
         }
         ActionListener<UpdateResponse> updateListener = new ActionListener<UpdateResponse>() {
             @Override
@@ -362,6 +386,35 @@ public class EsUtil {
         UpdateRequest request = new UpdateRequest(index, id);
         request.doc(map);
         client.updateAsync(request, RequestOptions.DEFAULT, updateListener);
+        return "Updated";
+    }
+
+    /**
+     * 判断索引是否存在和索引中的某个文档是否存在
+     *
+     * @param index 索引
+     * @param id    文档id
+     * @return 存在与否
+     * @throws Exception 相关的异常
+     */
+    private boolean existsDoc(String index, String id) throws Exception {
+        GetIndexRequest request = new GetIndexRequest(index);
+        boolean exist = client.indices().exists(request, RequestOptions.DEFAULT);
+        if (!exist) {
+            if (log.isInfoEnabled()) {
+                log.info("索引不存在!");
+            }
+            return false;
+        }
+        // 如果索引存在，那么判断索引中的某个文档是否存在
+        GetRequest getRequest = new GetRequest(index, id);
+        getRequest.fetchSourceContext(new FetchSourceContext(false));
+        getRequest.storedFields("_none_");
+        boolean exists = client.exists(getRequest, RequestOptions.DEFAULT);
+        if (log.isInfoEnabled()) {
+            log.info("existsIndex: {}", exists);
+        }
+        return exists;
     }
 
 }

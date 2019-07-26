@@ -1,8 +1,10 @@
 package com.fukun.es.web;
 
 import com.fukun.commons.web.annotations.ResponseResult;
+import com.fukun.es.constant.Constants;
 import com.fukun.es.manager.EsManager;
 import com.fukun.es.query.EsQuery;
+import com.fukun.es.util.EsUtil;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
@@ -28,6 +30,9 @@ public class EsController {
     @Resource
     private EsManager esManager;
 
+    @Resource
+    private EsUtil esUtil;
+
     @ApiOperation(value = "根据条件从es检索相关的文档", httpMethod = "POST", notes = "根据条件从es检索相关的文档")
     @PostMapping("/_query")
     public List<Map<String, Object>> queryDocumentByQueryCondition(@RequestBody EsQuery esQuery) throws Exception {
@@ -36,20 +41,40 @@ public class EsController {
 
     @ApiOperation(value = "批量添加文档", httpMethod = "POST", notes = "批量添加文档")
     @PostMapping("/{index}/_madd")
-    public void addBatchDocument(@PathVariable String index, @RequestBody List<Map<String, Object>> list) {
-        esManager.addBatchDocument(index, list);
+    public int addBatchDocument(@PathVariable String index, @RequestBody List<Map<String, Object>> list) {
+        return esUtil.addBatchDocument(index, list);
+    }
+
+    @ApiOperation(value = "添加文档", httpMethod = "POST", notes = "添加文档")
+    @PostMapping("/{index}/{id}")
+    public String addDocument(@PathVariable String index, @PathVariable String id, @RequestBody Map<String, Object> map) throws Exception {
+        map.put(Constants.ES_DOC_ID, id);
+        return esUtil.addDocument(index, id, map);
     }
 
     @ApiOperation(value = "批量删除文档", httpMethod = "DELETE", notes = "批量删除文档")
     @DeleteMapping("/{index}/_mdelete")
-    public void delBatchDocument(@PathVariable String index, @RequestBody List<String> list) {
-        esManager.delBatchDocument(index, list);
+    public int delBatchDocument(@PathVariable String index, @RequestBody List<String> list) {
+        return esUtil.delBatchDocument(index, list);
+    }
+
+    @ApiOperation(value = "删除文档", httpMethod = "DELETE", notes = "删除文档")
+    @DeleteMapping("/{index}/{id}")
+    public String delDocument(@PathVariable String index, @PathVariable String id) throws Exception {
+        return esUtil.deleteDocument(index, id);
     }
 
     @ApiOperation(value = "批量更新文档", httpMethod = "PUT", notes = "批量更新文档")
     @PutMapping("/{index}/_mupdate")
-    public void updateBatchDocument(@PathVariable String index, @RequestBody List<Map<String, Object>> list) {
-        esManager.updateBatchDocument(index, list);
+    public int updateBatchDocument(@PathVariable String index, @RequestBody List<Map<String, Object>> list) {
+        return esUtil.updateBatchDocument(index, list);
+    }
+
+    @ApiOperation(value = "更新文档", httpMethod = "PUT", notes = "更新文档")
+    @PutMapping("/{index}/{id}")
+    public String updateDocument(@PathVariable String index, @PathVariable String id, @RequestBody Map<String, Object> map) throws Exception {
+        map.put(Constants.ES_DOC_ID, id);
+        return esUtil.updateDocument(index, id, map);
     }
 
 }

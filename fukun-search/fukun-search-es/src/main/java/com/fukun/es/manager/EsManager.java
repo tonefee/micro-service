@@ -2,7 +2,6 @@ package com.fukun.es.manager;
 
 import com.fukun.commons.util.StringUtil;
 import com.fukun.es.query.EsQuery;
-import com.fukun.es.util.EsUtil;
 import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.MapUtils;
@@ -35,9 +34,6 @@ public class EsManager {
 
     @Resource
     private RestHighLevelClient client;
-
-    @Resource
-    private EsUtil esUtil;
 
     /**
      * 根据多个查询条件并集查找相关的文档（复合查询）
@@ -98,36 +94,5 @@ public class EsManager {
         }
         return null;
     }
-
-    /**
-     * 批量添加文档操作
-     *
-     * @param index 索引名称
-     * @param list  文档列表
-     */
-    public void addBatchDocument(String index, List<Map<String, Object>> list) {
-        esUtil.addBatchDocument(index, list);
-    }
-
-    /**
-     * 批量删除文档操作
-     *
-     * @param index 索引名称
-     * @param list  文档id列表
-     */
-    public void delBatchDocument(String index, List<String> list) {
-        esUtil.delBatchDocument(index, list);
-    }
-
-    /**
-     * 批量更新文档操作
-     *
-     * @param index 索引名称
-     * @param list  文档列表
-     */
-    public void updateBatchDocument(String index, List<Map<String, Object>> list) {
-        esUtil.updateBatchDocument(index, list);
-    }
-
 
 }
