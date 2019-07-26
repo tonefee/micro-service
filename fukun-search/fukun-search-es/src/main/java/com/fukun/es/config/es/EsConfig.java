@@ -44,6 +44,10 @@ public class EsConfig {
 
     private Integer maxConnectPerRoute;
 
+    /**
+     * <p>
+     * 依赖注入完成之后，进行一些初始化的工作，<a href ="https://www.jianshu.com/p/98cf7d8b9ec3">@PostConstruct注解的说明</a>
+     */
     @PostConstruct
     public void setEsLinkInfo() {
         StringTokenizer st = new StringTokenizer(hosts, ",");
