@@ -30,7 +30,18 @@ server:
  port: 8008
 
 es:
-  host: 192.168.0.43
+  # 集群地址，多个用,隔开
+  hosts: 192.168.0.43
   port: 9200
-  protocol: http
+  # 使用的协议
+  schema: http
+  # 连接超时时间
+  connectTimeOut: 1000
+  socketTimeOut: 30000
+  # 获取连接的超时时间
+  connectionRequestTimeOut: 500
+  # 最大连接数
+  maxConnectNum: 100
+  # 最大路由连接数
+  maxConnectPerRoute: 100
 

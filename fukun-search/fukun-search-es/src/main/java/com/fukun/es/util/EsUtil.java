@@ -55,14 +55,14 @@ public class EsUtil {
             return;
         }
         if (CollectionUtil.isNotEmpty(list)) {
+            la.reset();
             // 异步方法不会阻塞并立即返回
             ActionListener<BulkResponse> addBatchListener = new ActionListener<BulkResponse>() {
                 @Override
                 public void onResponse(BulkResponse bulkResponse) {
-                    la.add(1);
                     //如果执行成功，则调用onResponse方法;
                     if (log.isInfoEnabled()) {
-                        log.info("添加第{}个文档成功的结果：{}", la.intValue(), bulkResponse.status());
+                        log.info("添加{}个文档成功的结果：{}", la.intValue(), bulkResponse.status());
                     }
                 }
 
@@ -70,7 +70,7 @@ public class EsUtil {
                 public void onFailure(Exception e) {
                     //如果执行失败，则调用 onFailure 方法;
                     if (log.isInfoEnabled()) {
-                        log.error("添加第{}个文档失败的相关异常：{}", la.intValue(), e);
+                        log.error("添加{}个文档失败的相关异常：{}", la.intValue(), e);
                     }
                 }
             };
@@ -79,7 +79,6 @@ public class EsUtil {
             Map<String, Object> map;
             Object object;
             String id = null;
-            IndexRequest indexRequest = new IndexRequest(index);
             if (list instanceof RandomAccess) {
                 int size = list.size();
                 for(int i = 0; i < size; i++) {
@@ -88,11 +87,8 @@ public class EsUtil {
                     if (null != object) {
                         id = (String) object;
                     }
-                    bulkRequest.add(indexRequest.id(id).source(map));
-                    // 同步操作
-                    // BulkResponse r = client.bulk(bulkRequest, RequestOptions.DEFAULT);
-                    // 异步操作
-                    client.bulkAsync(bulkRequest, RequestOptions.DEFAULT, addBatchListener);
+                    la.add(1);
+                    bulkRequest.add(new IndexRequest(index).id(id).source(map));
                 }
 
             } else {
@@ -102,15 +98,15 @@ public class EsUtil {
                     if (null != object) {
                         id = (String) object;
                     }
-                    bulkRequest.add(indexRequest.id(id).source(map));
-                    // 同步操作
-                    // BulkResponse r = client.bulk(bulkRequest, RequestOptions.DEFAULT);
-                    // 异步操作
-                    client.bulkAsync(bulkRequest, RequestOptions.DEFAULT, addBatchListener);
+                    la.add(1);
+                    bulkRequest.add(new IndexRequest(index).id(id).source(map));
                 }
             }
+            // 同步操作
+            // BulkResponse r = client.bulk(bulkRequest, RequestOptions.DEFAULT);
+            // 异步操作
+            client.bulkAsync(bulkRequest, RequestOptions.DEFAULT, addBatchListener);
         }
-        la.reset();
     }
 
     /**
@@ -127,14 +123,14 @@ public class EsUtil {
             return;
         }
         if (CollectionUtil.isNotEmpty(list)) {
+            la.reset();
             // 异步方法不会阻塞并立即返回
             ActionListener<BulkResponse> updateBatchListener = new ActionListener<BulkResponse>() {
                 @Override
                 public void onResponse(BulkResponse bulkResponse) {
-                    la.add(1);
                     //如果执行成功，则调用onResponse方法;
                     if (log.isInfoEnabled()) {
-                        log.info("更新第{}个文档成功的结果：{}", la.intValue(), bulkResponse.status());
+                        log.info("更新{}个文档成功的结果：{}", la.intValue(), bulkResponse.status());
                     }
                 }
 
@@ -142,7 +138,7 @@ public class EsUtil {
                 public void onFailure(Exception e) {
                     //如果执行失败，则调用 onFailure 方法;
                     if (log.isInfoEnabled()) {
-                        log.error("更新第{}个文档失败的相关异常：{}", la.intValue(), e);
+                        log.error("更新{}个文档失败的相关异常：{}", la.intValue(), e);
                     }
                 }
             };
@@ -151,7 +147,6 @@ public class EsUtil {
             Map<String, Object> map;
             Object object;
             String id = null;
-            UpdateRequest updateRequest = new UpdateRequest().index(index);
             if (list instanceof RandomAccess) {
                 int size = list.size();
                 for(int i = 0; i < size; i++) {
@@ -160,11 +155,8 @@ public class EsUtil {
                     if (null != object) {
                         id = (String) object;
                     }
-                    bulkRequest.add(updateRequest.id(id).doc(map));
-                    // 同步操作
-                    // BulkResponse r = client.bulk(bulkRequest, RequestOptions.DEFAULT);
-                    // 异步操作
-                    client.bulkAsync(bulkRequest, RequestOptions.DEFAULT, updateBatchListener);
+                    bulkRequest.add(new UpdateRequest(index, id).doc(map));
+                    la.add(1);
                 }
 
             } else {
@@ -174,16 +166,15 @@ public class EsUtil {
                     if (null != object) {
                         id = (String) object;
                     }
-                    bulkRequest.add(updateRequest.id(id).doc(map));
-                    // 同步操作
-                    // BulkResponse r = client.bulk(bulkRequest, RequestOptions.DEFAULT);
-                    // 异步操作
-                    client.bulkAsync(bulkRequest, RequestOptions.DEFAULT, updateBatchListener);
+                    bulkRequest.add(new UpdateRequest(index, id).doc(map));
+                    la.add(1);
                 }
             }
+            // 同步操作
+            // BulkResponse r = client.bulk(bulkRequest, RequestOptions.DEFAULT);
+            // 异步操作
+            client.bulkAsync(bulkRequest, RequestOptions.DEFAULT, updateBatchListener);
         }
-        la.reset();
-
     }
 
     /**
@@ -200,14 +191,14 @@ public class EsUtil {
             return;
         }
         if (CollectionUtil.isNotEmpty(list)) {
+            la.reset();
             // 异步方法不会阻塞并立即返回
             ActionListener<BulkResponse> deleteBatchListener = new ActionListener<BulkResponse>() {
                 @Override
                 public void onResponse(BulkResponse bulkResponse) {
-                    la.add(1);
                     //如果执行成功，则调用onResponse方法;
                     if (log.isInfoEnabled()) {
-                        log.info("删除第{}个文档成功的结果：{}", la.intValue(), bulkResponse.status());
+                        log.info("删除{}个文档成功的结果：{}", la.intValue(), bulkResponse.status());
                     }
                 }
 
@@ -215,38 +206,33 @@ public class EsUtil {
                 public void onFailure(Exception e) {
                     //如果执行失败，则调用 onFailure 方法;
                     if (log.isInfoEnabled()) {
-                        log.error("删除第{}个文档失败的相关异常：{}", la.intValue(), e);
+                        log.error("删除{}个文档失败的相关异常：{}", la.intValue(), e);
                     }
                 }
             };
             //批量操作请求：
             BulkRequest bulkRequest = new BulkRequest();
             String id;
-            DeleteRequest deleteRequest = new DeleteRequest(index);
             if (list instanceof RandomAccess) {
                 int size = list.size();
                 for(int i = 0; i < size; i++) {
                     id = list.get(i);
-                    bulkRequest.add(deleteRequest.id(id));
-                    // 同步操作
-                    // BulkResponse r = client.bulk(bulkRequest, RequestOptions.DEFAULT);
-                    // 异步操作
-                    client.bulkAsync(bulkRequest, RequestOptions.DEFAULT, deleteBatchListener);
+                    bulkRequest.add(new DeleteRequest(index, id));
+                    la.add(1);
                 }
 
             } else {
                 for(Iterator<String> iterator = list.iterator(); iterator.hasNext(); ) {
                     id = iterator.next();
-                    bulkRequest.add(deleteRequest.id(id));
-                    // 同步操作
-                    // BulkResponse r = client.bulk(bulkRequest, RequestOptions.DEFAULT);
-                    // 异步操作
-                    client.bulkAsync(bulkRequest, RequestOptions.DEFAULT, deleteBatchListener);
+                    bulkRequest.add(new DeleteRequest(index, id));
+                    la.add(1);
                 }
             }
+            // 同步操作
+            // BulkResponse r = client.bulk(bulkRequest, RequestOptions.DEFAULT);
+            // 异步操作
+            client.bulkAsync(bulkRequest, RequestOptions.DEFAULT, deleteBatchListener);
         }
-        la.reset();
-
     }
 
     /**
