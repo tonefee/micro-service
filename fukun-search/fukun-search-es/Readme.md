@@ -1232,6 +1232,7 @@ restful API 执行相关的操作，这就如同使用kibana一样可以方便�
                   .endObject()
                 .endObject();
 ```
+**`注意：无论对于具体的索引，还是模糊的索引，都是先根据索引名称得到 Shard 列表，再将多个 Shard 的 Query 结果 Merge 到一起返回。`**  
 
 其他的api相关的操作请自行进入[文档操作API](https://www.elastic.co/guide/en/elasticsearch/reference/7.2/docs.html)去学习，进入到该API界面以后，右边的Elasticsearch Reference: 选择7.2的，
 其他的这里不做赘述了。  
