@@ -1207,6 +1207,32 @@ GET /fukun_order/_search
 
 更多的ES相关的操作结合java API的演示请参考当前项目下面的baseoperate目录的markdown文件说明。   
 
+运行该项目下面的单元测试进行es的相关操作，通过es的单元测试你会发现我们可以在java API中通过
+XContentBuilder构造出json格式的操作参数，然后Request对象构造出完整的url，调用es执行相关的
+操作，这就如同使用kibana一样可以方便的通过es 提供的api并携带json格式的参数进行相关的操作，
+比如如下的格式：  
+![搜索引擎](pictures/p36.png)    
+可以通过java代码实现(详细代码请查看单元测试类中的deleteByQueryWithRestClient方法)，如下：  
+```
+ XContentBuilder builder;
+        builder = JsonXContent.contentBuilder()
+                .startObject()
+                  .startObject("query")
+                     .startObject("bool")
+                            .startArray("must")
+                              .startObject()
+                                .startObject("term")
+                                    .startObject("tag")
+                                    .field("value", "体育")
+                                    .endObject()
+                                .endObject()
+                              .endObject()
+                            .endArray()
+                     .endObject()
+                  .endObject()
+                .endObject();
+```
+
 其他的api相关的操作请自行进入[文档操作API](https://www.elastic.co/guide/en/elasticsearch/reference/7.2/docs.html)去学习，进入到该API界面以后，右边的Elasticsearch Reference: 选择7.2的，
 其他的这里不做赘述了。  
 
