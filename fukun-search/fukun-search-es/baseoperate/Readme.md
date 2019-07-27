@@ -1397,6 +1397,281 @@ GET twitter/_analyze
 }
 ```
 
+# 使用 Java API 进行单元测试
+创建新闻相关的索引并指定news的index的mapping结构，然后对索引字段指定IK中文分词器，
+es中的IK分词器的插件安装这里不做赘述。  
+创建映射之前，首先使用 PUT news 创建索引，然后使用 PUT news/_mapping 指定news索引的
+映射结构并对全文搜索字段指定ik中文分析器，如下：  
+```
+PUT news/_mapping
+{
+  "properties": {
+   "id":{
+        "type":"keyword"
+      },
+    "title":{
+      "type":"text",
+      "analyzer": "ik_max_word"
+      },
+    "tag":{
+      "type":"keyword"
+    },
+    "publishTime":{
+      "type":"date"
+    }
+  }
+}
+```
+然后使用 GET news/_mapping 命令查看是否设置成功，如下：  
+![搜索引擎](../pictures/p35.png)  
+从结果可以看出设置成功。  
+上面使用java API进行操作可以参考单元测试类中 createMappingTest 方法即可。  
+
+下面批量添加数据，如下：  
+```
+POST _bulk
+{"index":{"_index":"news"}}
+{"title":"中印边防军于拉达克举行会晤 强调维护边境和平","tag":"军事","publishTime":"2018-01-27T08:34:00Z"}
+{"index":{"_index":"news"}}
+{"title":"费德勒收郑泫退赛礼 进决赛战西里奇","tag":"体育","publishTime":"2018-01-26T14:34:00Z"}
+{"index":{"_index":"news"}}
+{"title":"欧文否认拿动手术威胁骑士 兴奋全明星联手詹皇","tag":"体育","publishTime":"2018-01-26T08:34:00Z"}
+{"index":{"_index":"news"}}
+{"title":"皇马官方通告拉莫斯伊斯科伤情 将缺阵西甲关键战","tag":"体育","publishTime":"2018-01-26T20:34:00Z"}
+```
+查看批量添加的文档数据是否成功，如下：  
+```
+GET news/_search
+{
+  "query": {
+    "match_all": {}
+  }
+}
+```
+返回结果：  
+```
+{
+  "took" : 0,
+  "timed_out" : false,
+  "_shards" : {
+    "total" : 1,
+    "successful" : 1,
+    "skipped" : 0,
+    "failed" : 0
+  },
+  "hits" : {
+    "total" : {
+      "value" : 4,
+      "relation" : "eq"
+    },
+    "max_score" : 1.0,
+    "hits" : [
+      {
+        "_index" : "news",
+        "_type" : "_doc",
+        "_id" : "AR8oMWwB01YPn65fVSe5",
+        "_score" : 1.0,
+        "_source" : {
+          "title" : "中印边防军于拉达克举行会晤 强调维护边境和平",
+          "tag" : "军事",
+          "publishTime" : "2018-01-27T08:34:00Z"
+        }
+      },
+      {
+        "_index" : "news",
+        "_type" : "_doc",
+        "_id" : "Ah8oMWwB01YPn65fVSe5",
+        "_score" : 1.0,
+        "_source" : {
+          "title" : "费德勒收郑泫退赛礼 进决赛战西里奇",
+          "tag" : "体育",
+          "publishTime" : "2018-01-26T14:34:00Z"
+        }
+      },
+      {
+        "_index" : "news",
+        "_type" : "_doc",
+        "_id" : "Ax8oMWwB01YPn65fVSe5",
+        "_score" : 1.0,
+        "_source" : {
+          "title" : "欧文否认拿动手术威胁骑士 兴奋全明星联手詹皇",
+          "tag" : "体育",
+          "publishTime" : "2018-01-26T08:34:00Z"
+        }
+      },
+      {
+        "_index" : "news",
+        "_type" : "_doc",
+        "_id" : "BB8oMWwB01YPn65fVSe5",
+        "_score" : 1.0,
+        "_source" : {
+          "title" : "皇马官方通告拉莫斯伊斯科伤情 将缺阵西甲关键战",
+          "tag" : "体育",
+          "publishTime" : "2018-01-26T20:34:00Z"
+        }
+      }
+    ]
+  }
+}
+```
+说明添加成功。  
+使用 java API 进行批量添加，参考单元测试类中的batchAddTest方法即可，运行该方法，在kibana可视化界面查看
+是否添加成功，如下：  
+```
+GET news/_search
+{
+  "query": {
+    "match_all": {}
+  }
+}
+```
+返回结果如下：  
+```
+{
+  "took" : 1,
+  "timed_out" : false,
+  "_shards" : {
+    "total" : 1,
+    "successful" : 1,
+    "skipped" : 0,
+    "failed" : 0
+  },
+  "hits" : {
+    "total" : {
+      "value" : 4,
+      "relation" : "eq"
+    },
+    "max_score" : 1.0,
+    "hits" : [
+      {
+        "_index" : "news",
+        "_type" : "_doc",
+        "_id" : "BR9kMWwB01YPn65fOCeQ",
+        "_score" : 1.0,
+        "_source" : {
+          "title" : "中印边防军于拉达克举行会晤 强调维护边境和平",
+          "tag" : "军事",
+          "publishTime" : "2018-01-27T08:34:00Z"
+        }
+      },
+      {
+        "_index" : "news",
+        "_type" : "_doc",
+        "_id" : "Bh9kMWwB01YPn65fOCeQ",
+        "_score" : 1.0,
+        "_source" : {
+          "title" : "费德勒收郑泫退赛礼 进决赛战西里奇",
+          "tag" : "体育",
+          "publishTime" : "2018-01-26T14:34:00Z"
+        }
+      },
+      {
+        "_index" : "news",
+        "_type" : "_doc",
+        "_id" : "Bx9kMWwB01YPn65fOCeQ",
+        "_score" : 1.0,
+        "_source" : {
+          "title" : "欧文否认拿动手术威胁骑士 兴奋全明星联手詹皇",
+          "tag" : "体育",
+          "publishTime" : "2018-01-26T08:34:00Z"
+        }
+      },
+      {
+        "_index" : "news",
+        "_type" : "_doc",
+        "_id" : "CB9kMWwB01YPn65fOCeQ",
+        "_score" : 1.0,
+        "_source" : {
+          "title" : "皇马官方通告拉莫斯伊斯科伤情 将缺阵西甲关键战",
+          "tag" : "体育",
+          "publishTime" : "2018-01-26T20:34:00Z"
+        }
+      }
+    ]
+  }
+}
+```
+
+查询目标：2018年1月26日早八点到晚八点关于费德勒的前十条体育新闻的标题。  
+```
+GET news/_search
+{
+    "from":"0",
+    "size":"10",
+    "_source":["title"],
+    "query":{
+        "bool":{
+          "must": [
+            {
+              "match": {"title": "费德勒"}
+            },
+            {
+              "term": {
+                "tag": {
+                  "value": "体育"
+                }
+              }
+            },
+            {
+              "range": {
+              "publishTime": {
+                "gte": "2018-01-26T08:00:00Z",
+                "lte": "2018-01-26T20:00:00Z"
+              }
+            }
+            }
+          ]
+           
+        }
+    }
+
+}
+```
+结果如下：  
+```
+{
+  "took" : 8,
+  "timed_out" : false,
+  "_shards" : {
+    "total" : 1,
+    "successful" : 1,
+    "skipped" : 0,
+    "failed" : 0
+  },
+  "hits" : {
+    "total" : {
+      "value" : 1,
+      "relation" : "eq"
+    },
+    "max_score" : 4.994704,
+    "hits" : [
+      {
+        "_index" : "news",
+        "_type" : "_doc",
+        "_id" : "Ah8oMWwB01YPn65fVSe5",
+        "_score" : 4.994704,
+        "_source" : {
+          "title" : "费德勒收郑泫退赛礼 进决赛战西里奇"
+        }
+      }
+    ]
+  }
+}
+```
+使用java API怎么做呢？看一下EsTests的单元测试中的queryTest方法即可，执行该方法，
+返回结果如下：
+```  
+ main] com.fukun.EsTests                        : Started EsTests in 22.166 seconds (JVM running for 27.598)
+{
+"took":4,"timed_out":false,"_shards":{"total":1,"successful":1,"skipped":0,"failed":0},"hits":{"total":{"value":1,"relation":"eq"},"max_score":4.994704,
+"hits":[{"_index":"news","_type":"_doc","_id":"Ah8oMWwB01YPn65fVSe5","_score":4.994704,"_source":{"title":"费德勒收郑泫退赛礼 进决赛战西里奇"}}]}}
+
+```
+其他的 java API 操作请查看单元测试类，**`注意：该单元测试类最好按照顺序从上往下运行`**。  
+
+  
+
+
 
 
  

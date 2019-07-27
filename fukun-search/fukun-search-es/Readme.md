@@ -1205,6 +1205,8 @@ GET /fukun_order/_search
 ![搜索引擎](pictures/p34.png)   
 通过查询结果可以看出是按照user_status进行降序排列，并且查询出了address包含南的所有文档。    
 
+更多的ES相关的操作结合java API的演示请参考当前项目下面的baseoperate目录的markdown文件说明。   
+
 其他的api相关的操作请自行进入[文档操作API](https://www.elastic.co/guide/en/elasticsearch/reference/7.2/docs.html)去学习，进入到该API界面以后，右边的Elasticsearch Reference: 选择7.2的，
 其他的这里不做赘述了。  
 
