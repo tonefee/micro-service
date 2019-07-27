@@ -1208,8 +1208,8 @@ GET /fukun_order/_search
 更多的ES相关的操作结合java API的演示请参考当前项目下面的baseoperate目录的markdown文件说明。   
 
 运行该项目下面的单元测试进行es的相关操作，通过es的单元测试你会发现我们可以在java API中通过
-XContentBuilder构造出json格式的操作参数，然后Request对象构造出完整的url，调用es执行相关的
-操作，这就如同使用kibana一样可以方便的通过es 提供的api并携带json格式的参数进行相关的操作，
+XContentBuilder构造出json格式的操作参数，然后通过Request对象构造出完整的url，调用es执行相关的
+restful API 执行相关的操作，这就如同使用kibana一样可以方便的通过es 提供的api并携带json格式的参数进行相关的操作，
 比如如下的格式：  
 ![搜索引擎](pictures/p36.png)    
 可以通过java代码实现(详细代码请查看单元测试类中的deleteByQueryWithRestClient方法)，如下：  
