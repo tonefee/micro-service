@@ -141,6 +141,10 @@ public class RedisConfig extends CachingConfigurerSupport {
         mapper.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY);
         //支持java8时间模块序列化
         mapper.registerModule(new JavaTimeModule());
+        // 下面的这个配置不小心将jackson（spring mvc默认就是使用jackson做json处理的）的全局配置覆盖从而导致pring Boot默认错误返回格式变成数组@RequestBody无法解析Json格式
+        // 将类名称序列化到json串中，spring boot默认的错误返回并不是一个json的对象格式，而是一个数组
+        // 配置该项后，json格式序列化时会将对象类名称信息也会序列化进来，反序列化时同样也是需要 类和值的信息，格式是一个数组（两个长度），数组[0]存储类的信息，数组[1]存储值信息，
+        // mapper.enableDefaultTyping(ObjectMapper.DefaultTyping.NON_FINAL);
         return mapper;
     }
 
