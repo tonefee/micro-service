@@ -1667,6 +1667,239 @@ GET news/_search
 "hits":[{"_index":"news","_type":"_doc","_id":"Ah8oMWwB01YPn65fVSe5","_score":4.994704,"_source":{"title":"费德勒收郑泫退赛礼 进决赛战西里奇"}}]}}
 
 ```
+
+# 不停机之重建索引
+我们在使用ES的时候，尤其是初学者，通常都会遇到一个问题，那就是文档字段的映射类型创建错误问题，
+但是ES上却不能像mysql一样直接去修改字段类型，这时便出现了这个棘手的问题，今天让我们用一种索引重建的方式来修改字段映射类型。    
+使用索引重建并且不停机，需要有个前提，那就是你在使用索引时，都是使用索引别名而不是使用真正的索引名 
+，如果这点在你的程序上还没有做的话，那么请为其建立别名，好处很多，一旦当前索引出现了什么问题 不能及时恢复，
+你可以紧急切换到备用索引上而无需再重启服务、方便索引重建等等。     
+
+## 出现的业务场景
+比如下面的一个场景;  
+一开始我们使用es的动态mapping插入数据，但是不小心有些数据是2019-07-01这种日期格式的，所以title这种field被自动映射为了date类型，实际上它应该是string类型的，  
+```
+POST /my_index/3
+{
+  "title":"2019-07-05"
+}
+
+```
+然后获取 my_index 的映射结果，如下：  
+GET my_index/_mapping
+  
+```
+{
+  "my_index" : {
+    "mappings" : {
+      "properties" : {
+        "title" : {
+          "type" : "date"
+        }
+      }
+    }
+  }
+}
+```
+发现title被自动映射成了date类型，当后期向索引中加入string类型的title值的时候，就会报错  
+```
+POST /my_index/2
+{
+  "title":"tangyifei"
+}
+```
+返回信息如下：  
+```
+{
+  "error": {
+    "root_cause": [
+      {
+        "type": "mapper_parsing_exception",
+        "reason": "failed to parse field [title] of type [date] in document with id 'Eh8MQWwB01YPn65f7ydw'"
+      }
+    ],
+    "type": "mapper_parsing_exception",
+    "reason": "failed to parse field [title] of type [date] in document with id 'Eh8MQWwB01YPn65f7ydw'",
+    "caused_by": {
+      "type": "illegal_argument_exception",
+      "reason": "failed to parse date field [tangyifei] with format [strict_date_optional_time||epoch_millis]",
+      "caused_by": {
+        "type": "date_time_parse_exception",
+        "reason": "Failed to parse with all enclosed parsers"
+      }
+    }
+  },
+  "status": 400
+}
+```
+如果此时想修改title的类型，是不可能的。  
+此时，唯一的办法，就是进行reindex，也就是说，重新建立一个索引，将旧索引的数据查询出来，再导入新索引  
+如果说旧索引的名字是 old_index，新索引的名字是 new_index，终端java应用已经在使用old_index进行相关操作了，
+难道还要去停止终端java应用，修改使用的index为new_index，才重新启动java应用吗？这个过程中，就会导致java应用停机，可用性降低。  
+假如 old_index 和 new_index 的索引别名是 alias_index，其实终端java应用只要对index进行操作即可，而不需要java应用停机，
+old_index 数据同步到 new_index 的操作并且切换到 new_index， 对终端java应用透明。   
+
+## 实现思路
+下面我们定义一个索引 old_index，并设置title字段为 2019-07-01，id为1的文档，如下： 
+``` 
+POST /old_index/1
+{
+  "id":1,
+  "title":"2019-07-01"
+}
+```
+返回动态生成的映射，如下：  
+GET old_index/_mapping  
+```
+{
+  "old_index" : {
+    "mappings" : {
+      "properties" : {
+        "id" : {
+          "type" : "long"
+        },
+        "title" : {
+          "type" : "date"
+        }
+      }
+    }
+  }
+}
+```
+发现 title 字段动态映射成了date类型，怎么修改这个字段类型呢？  
+使用 PUT old_index/_alias/alias_index  为 old_index 索引定义一个别名 alias_index。  
+ 
+定义一个 new_index 并设置 title 的字段类型为text，如下：  
+PUT new_index  
+
+```
+PUT new_index/_mapping
+{
+  "properties": {
+    "id":{
+      "type":"long"
+    },
+    
+       "title":{
+      "type":"text",
+      "analyzer": "ik_max_word"
+      }
+   
+  }
+}
+```
+然后执行数据复制操作，将 old_index 中的数据复制到 new_index 中，如下： 
+
+```
+POST _reindex
+{
+  "conflicts": "proceed",
+  "source": {
+    "index": "old_index"
+  },
+  "dest": {
+    "index": "new_index",
+    "op_type": "create",
+    "version_type": "external"
+  }
+}
+```
+reindex会将一个索引的数据复制到另一个已存在的索引，但是并不会复制原索引的mapping（映射）、shard（分片）、replicas（副本）等配置信息，
+所以这也是为什么 new_index 创建了和 old_index 结构基本相同的目标索引的原因。     
+设置conflicts为proceed代表当复制数据时发生版本冲突时继续执行（默认设置在版本冲突时会中止了reindex进程）。  
+设置op_type为create是指在目标索引 new_index 中创建丢失的文档，所有现有文件将导致版本冲突。  
+设置version_type为external就是指数据从源索引 old_index 拷贝到目标索引 new_index 的时候会同时拷贝上版本号字段，并更新目标索引中 new_index 比源索引中 old_index 更旧版本的文档。    
+这里说下该导入功能执行效率，线上一个索引的数据量在8w左右用时3秒多（其实跟你的索引的一个文档数据量也有关系，这里仅仅给个参考点）。  
+
+查看数据是否复制成功，如下：  
+```
+GET new_index/_search
+{
+  "query": {
+    "match_all": {}
+  }
+}
+```
+返回如下：  
+```
+{
+  "took" : 325,
+  "timed_out" : false,
+  "_shards" : {
+    "total" : 1,
+    "successful" : 1,
+    "skipped" : 0,
+    "failed" : 0
+  },
+  "hits" : {
+    "total" : {
+      "value" : 1,
+      "relation" : "eq"
+    },
+    "max_score" : 1.0,
+    "hits" : [
+      {
+        "_index" : "new_index",
+        "_type" : "_doc",
+        "_id" : "Fh8fQWwB01YPn65f3SfC",
+        "_score" : 1.0,
+        "_source" : {
+          "id" : 1,
+          "title" : "2019-07-01"
+        }
+      }
+    ]
+  }
+}
+```
+发现数据已经从 old_index 复制到了 new_index，然后把 old_index 别名删除并且同时为 new_index 添加别名 
+alias_index（此时线上程序已经切换到 new_index 数据源上了） 。  
+```
+POST _aliases
+{
+  "actions": [
+    {
+     
+      "remove": {
+        "index": "old_index",
+        "alias": "alias_index"
+      }
+    
+    }
+  ]
+}
+
+POST _aliases
+{
+  "actions": [
+    {
+     
+      "add": {
+        "index": "new_index",
+        "alias": "alias_index"
+      }
+    
+    }
+  ]
+}
+```
+再次进行数据复制，目的是增量同步 old_index 中修改但没有同步到 new_index 中的数据， 
+因为在做以上的操作中的时候，很可能线上的 old_index 索引数据发生修改了，如下：  
+```
+POST _reindex
+{
+  "conflicts": "proceed",
+  "source": {
+    "index": "old_index"
+  },
+  "dest": {
+    "index": "new_index",
+    "op_type": "create",
+    "version_type": "external"
+  }
+}
+```
+
 其他的 java API 操作请查看单元测试类，**`注意：该单元测试类最好按照顺序从上往下运行`**。  
 
   
