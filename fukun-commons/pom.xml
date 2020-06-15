@@ -34,7 +34,7 @@
         <druid.version>1.1.4</druid.version>
         <elastic.version>5.6.3</elastic.version>
         <commons.lang3.version>3.5</commons.lang3.version>
-        <commons.collections4.version>4.0</commons.collections4.version>
+        <commons.collections4.version>4.1</commons.collections4.version>
         <commons.io.version>2.5</commons.io.version>
         <commons.logging.version>1.2</commons.logging.version>
         <commons.codec.version>1.10</commons.codec.version>
