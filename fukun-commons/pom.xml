@@ -28,7 +28,7 @@
         <tk.mapper.version>3.4.6</tk.mapper.version>
         <pagehelper.version>1.2.3</pagehelper.version>
         <mapper-spring-boot.version>1.2.3</mapper-spring-boot.version>
-        <fastjson.version>1.2.32</fastjson.version>
+        <fastjson.version>1.2.83</fastjson.version>
         <mybatis.spring.boot>2.0.1</mybatis.spring.boot>
         <mysql-connector>5.1.39</mysql-connector>
         <druid.version>1.1.4</druid.version>
